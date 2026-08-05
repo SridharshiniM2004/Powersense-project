@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
-from .routers import bills, predictions, chat, dashboard, profile, admin, engagement, integrations
+from .routers import bills, predictions, chat, dashboard, profile, admin, engagement, backend_api
 from .ml import load_models_at_startup
 
 @asynccontextmanager
@@ -15,7 +15,7 @@ app = FastAPI(title="PowerSense API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=[settings.frontend_url], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 for route in (bills.router, predictions.router, chat.router, dashboard.router, profile.router, admin.router, engagement.router):
     app.include_router(route, prefix="/api")
-app.include_router(integrations.router)
+app.include_router(backend_api.router)
 
 @app.get("/health")
 def health():
