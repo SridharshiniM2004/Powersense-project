@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+/* PowerSense visual system: bright paper surfaces without changing component contracts. */
+* { -webkit-tap-highlight-color: transparent; }
+
+.theme-light { background: #f4f8fb !important; color: #132033 !important; }
+.theme-light .bg-slate-950 { background-color: #f4f8fb !important; }
+.theme-light .bg-slate-950\/50 { background-color: rgba(244,248,251,.75) !important; }
+.theme-light .bg-slate-900 { background-color: #ffffff !important; }
+.theme-light .bg-slate-900\/60, .theme-light .bg-slate-900\/80 { background-color: rgba(255,255,255,.86) !important; }
+.theme-light .bg-slate-800, .theme-light .bg-slate-800\/50 { background-color: #e9f0f5 !important; }
+.theme-light .border-slate-800, .theme-light .border-slate-800\/80, .theme-light .border-slate-800\/50 { border-color: #d9e4eb !important; }
+.theme-light .border-slate-700, .theme-light .border-slate-700\/60 { border-color: #c9d7df !important; }
+.theme-light .text-white, .theme-light .text-slate-100, .theme-light .text-slate-200 { color: #132033 !important; }
+.theme-light .text-slate-300 { color: #33485b !important; }
+.theme-light .text-slate-400, .theme-light .text-slate-500 { color: #607589 !important; }
+.theme-light input, .theme-light select, .theme-light textarea { color: #132033 !important; background: #fff !important; border-color: #c9d7df !important; }
+.theme-light header { background-color: rgba(255,255,255,.87) !important; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .theme-light, .theme-light * { transition: background-color .18s ease, border-color .18s ease, color .18s ease; }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "PowerSense",
+  "description": "AI-Based Smart Electricity Bill Prediction, Analysis, and Energy Optimization System",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["SUPABASE_AUTH", "FASTAPI_OCR", "OPENROUTER_CHAT", "ML_PREDICTIONS"]
+}
