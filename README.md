@@ -10,8 +10,8 @@ PowerSense is an AI-assisted electricity-bill SaaS: Supabase owns authentication
 4. Start the API: `cd backend && python -m venv .venv && .venv\Scripts\pip install -r requirements.txt && .venv\Scripts\uvicorn app.main:app --reload --port 8000`.
 5. Start the interface: `npm install && npm run dev`.
 
-The two supplied `.pkl` files remain outside the repository by default; the backend reads them from `UNITS_MODEL_PATH` and `BILL_MODEL_PATH`. Do not commit them or any `.env` file.
+The supplied model files are packaged in `backend/models/` for Railway. The backend reads their Linux deployment paths from `UNITS_MODEL_PATH` and `BILL_MODEL_PATH`. Do not commit any `.env` file.
 
 ## Deployment
 
-Deploy `backend/` to Render with [render.yaml](render.yaml), set its environment secrets, then deploy the repository root to Vercel. Set `VITE_API_URL` in Vercel to `https://your-render-service.onrender.com/api`. [vercel.json](vercel.json) provides the SPA fallback for password recovery and application routes.
+Deploy the repository root to Railway; [railway.json](railway.json) selects the Docker build and [Dockerfile](Dockerfile) starts FastAPI. Set the secrets documented in [backend/RAILWAY_ENVIRONMENT.md](backend/RAILWAY_ENVIRONMENT.md). Deploy the frontend root to Vercel and set `VITE_API_URL` to `https://your-railway-service.up.railway.app/api`. [vercel.json](vercel.json) provides the SPA fallback for password recovery and application routes.

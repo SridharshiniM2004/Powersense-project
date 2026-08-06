@@ -13,7 +13,7 @@ def models():
     try:
         return joblib.load(settings.units_model_path), joblib.load(settings.bill_model_path)
     except Exception as exc:
-        raise HTTPException(status_code=503, detail="Prediction models are unavailable. Configure UNITS_MODEL_PATH and BILL_MODEL_PATH.") from exc
+        raise HTTPException(status_code=503, detail=f"Prediction models are unavailable. Expected units model at {settings.units_model_path} and bill model at {settings.bill_model_path}.") from exc
 
 
 def load_models_at_startup() -> None:

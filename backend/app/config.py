@@ -2,6 +2,8 @@ from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     supabase_url: str = ""
@@ -11,8 +13,9 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     openrouter_model: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
     frontend_url: str = "http://localhost:5173"
-    units_model_path: Path = Path("C:/Users/ritha/Downloads/electricity_units_model.pkl")
-    bill_model_path: Path = Path("C:/Users/ritha/Downloads/electricity_bill_model.pkl")
+    # Railway/Linux default. Local Windows paths may still be supplied through .env.
+    units_model_path: Path = BACKEND_DIR / "models" / "electricity_units_model.pkl"
+    bill_model_path: Path = BACKEND_DIR / "models" / "electricity_bill_model.pkl"
 
 
 settings = Settings()
