@@ -4,7 +4,7 @@ from .config import settings
 from .routers import bills, predictions, chat, dashboard, profile, admin, engagement, backend_api
 
 # OCR engines and trained models load lazily on their first relevant request.
-# This keeps Railway's network health check independent from optional services.
+# This keeps local startup independent from optional services.
 app = FastAPI(title="PowerSense API", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=[settings.frontend_url], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 for route in (bills.router, predictions.router, chat.router, dashboard.router, profile.router, admin.router, engagement.router):

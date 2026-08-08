@@ -1,17 +1,55 @@
-# PowerSense
+# PowerSense — local development
 
-PowerSense is an AI-assisted electricity-bill SaaS: Supabase owns authentication, sessions, data and files; FastAPI runs secure OCR, model inference and OpenRouter chat; React provides the dashboard.
+PowerSense runs locally with a React/Vite frontend, FastAPI backend, existing Supabase project, PaddleOCR, locally packaged ML models, and OpenRouter.
 
-## Run locally
+## Prerequisites
 
-1. Copy `.env.example` to `.env.local` and set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_API_URL=http://localhost:8000/api`.
-2. In Supabase SQL Editor, run [supabase/schema.sql](supabase/schema.sql). Enable Email confirmations and set its Site URL / redirect URLs to your frontend URL.
-3. Copy `backend/.env.example` to `backend/.env`, set the Supabase service-role key, OpenRouter credentials and exact model-file paths.
-4. Start the API: `cd backend && python -m venv .venv && .venv\Scripts\pip install -r requirements.txt && .venv\Scripts\uvicorn app.main:app --reload --port 8000`.
-5. Start the interface: `npm install && npm run dev`.
+- Node.js 20 or newer
+- Python 3.10 or newer
+- The model files included in `backend/models/`
 
-The supplied model files are packaged in `backend/models/` for Railway. The backend reads their Linux deployment paths from `UNITS_MODEL_PATH` and `BILL_MODEL_PATH`. Do not commit any `.env` file.
+## Configure the backend
 
-## Deployment
+Copy `backend/.env.example` to `backend/.env`, then enter the credentials for your existing Supabase project and OpenRouter account. Keep the resulting `.env` file private.
 
-Deploy the repository root to Railway; [railway.json](railway.json) selects the Docker build and [Dockerfile](Dockerfile) starts FastAPI. Set the secrets documented in [backend/RAILWAY_ENVIRONMENT.md](backend/RAILWAY_ENVIRONMENT.md). Deploy the frontend root to Vercel and set `VITE_API_URL` to `https://your-railway-service.up.railway.app/api`. [vercel.json](vercel.json) provides the SPA fallback for password recovery and application routes.
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-server-only-service-role-key
+SUPABASE_BILLS_BUCKET=bills
+OPENROUTER_API_KEY=your-openrouter-key
+OPENROUTER_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free
+FRONTEND_URL=http://localhost:5173
+UNITS_MODEL_PATH=models/electricity_units_model.pkl
+BILL_MODEL_PATH=models/electricity_bill_model.pkl
+```
+
+## Configure the frontend
+
+Create `.env.local` in the repository root:
+
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-public-anon-key
+VITE_API_URL=http://localhost:8000/api
+```
+
+## Run FastAPI locally
+
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+FastAPI is available at `http://localhost:8000`; use `/health` for a health response and `/docs` for API documentation.
+
+## Run the frontend locally
+
+```powershell
+npm install
+npm run dev
+```
+
+Open the Vite URL shown in the terminal, normally `http://localhost:5173`.

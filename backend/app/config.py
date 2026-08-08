@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     openrouter_model: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
     frontend_url: str = "http://localhost:5173"
-    # Railway/Linux default. Local Windows paths may still be supplied through .env.
+    # Portable local defaults; override through backend/.env when necessary.
     units_model_path: Path = BACKEND_DIR / "models" / "electricity_units_model.pkl"
     bill_model_path: Path = BACKEND_DIR / "models" / "electricity_bill_model.pkl"
 

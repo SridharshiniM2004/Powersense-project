@@ -17,7 +17,7 @@ def models():
 
 
 def load_models_at_startup() -> None:
-    """Fail fast at deployment if either user-provided trained model is unavailable."""
+    """Fail fast when either user-provided trained model is unavailable."""
     models()
 
 
