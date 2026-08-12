@@ -21,7 +21,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<'user' | 'admin' | 'commercial'>('user');
-  const [utilityProvider, setUtilityProvider] = useState('BESCOM (Bengaluru Electricity Supply Co.)');
+  const [utilityProvider, setUtilityProvider] = useState('TNEB (Tamil Nadu Electricity Board)');
   const [consumerNumber, setConsumerNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +83,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
             name: sbUser.user_metadata?.name || sbUser.email?.split('@')[0] || 'Rajesh Sharma',
             email: sbUser.email || email,
             role: sbUser.user_metadata?.role || 'user',
-            utilityProvider: sbUser.user_metadata?.utilityProvider || 'BESCOM (Bengaluru Electricity)',
+            utilityProvider: sbUser.user_metadata?.utilityProvider || 'TNEB (Tamil Nadu Electricity Board)',
             consumerNumber: sbUser.user_metadata?.consumerNumber || '08849-30219',
             sanctionedLoadKw: 6.5,
             homeAreaSqFt: 1850,
@@ -372,7 +372,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                       type="text"
                       value={utilityProvider}
                       onChange={(e) => setUtilityProvider(e.target.value)}
-                      placeholder="BESCOM (Bengaluru Electricity)"
+                      placeholder="TNEB (Tamil Nadu Electricity Board)"
                       className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:border-cyan-500"
                     />
                   </div>

@@ -15,7 +15,7 @@ export const authService = {
         name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'PowerSense User',
         email: data.user.email || email,
         role: (data.user.user_metadata?.role as any) || 'user',
-        utilityProvider: data.user.user_metadata?.utilityProvider || 'BESCOM (Bengaluru Electricity Supply Co.)',
+        utilityProvider: data.user.user_metadata?.utilityProvider || 'TNEB (Tamil Nadu Electricity Board)',
         consumerNumber: data.user.user_metadata?.consumerNumber || '08849-30219',
         sanctionedLoadKw: data.user.user_metadata?.sanctionedLoadKw || 6.5,
         homeAreaSqFt: data.user.user_metadata?.homeAreaSqFt || 1850,

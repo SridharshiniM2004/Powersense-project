@@ -16,7 +16,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ user, onSuccess }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<'user' | 'commercial' | 'admin'>('user');
-  const [utilityProvider, setUtilityProvider] = useState('BESCOM (Bengaluru Electricity Supply Co.)');
+  const [utilityProvider, setUtilityProvider] = useState('TNEB (Tamil Nadu Electricity Board)');
   const [consumerNumber, setConsumerNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
