@@ -160,7 +160,16 @@ export function App() {
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Routes>
-          <Route path="/" element={<LandingPage setActiveTab={navigateToTab} onOpenAuth={() => navigate('/sign-in')} />} />
+          <Route
+            path="/"
+            element={
+              <LandingPage
+                setActiveTab={navigateToTab}
+                onOpenAuth={() => navigate('/sign-in')}
+                isAdmin={user?.role === 'admin'}
+              />
+            }
+          />
           <Route path="/sign-in" element={<SignInPage user={user} onSuccess={handleLoginSuccess} />} />
           <Route path="/sign-up" element={<SignUpPage user={user} onSuccess={handleLoginSuccess} />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />

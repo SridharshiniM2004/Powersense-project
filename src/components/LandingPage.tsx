@@ -18,9 +18,10 @@ import {
 interface LandingPageProps {
   setActiveTab: (tab: string) => void;
   onOpenAuth: () => void;
+  isAdmin?: boolean;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab, onOpenAuth }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab, onOpenAuth, isAdmin = false }) => {
   // Interactive Landing Calculator State
   const [calcUnits, setCalcUnits] = useState<number>(480);
   const [calcTariff, setCalcTariff] = useState<'Residential' | 'Commercial'>('Residential');
@@ -77,6 +78,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab, onOpenAu
                 <span>Explore Live Dashboard</span>
               </button>
             </div>
+
+            {isAdmin && (
+              <div className="flex justify-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('admin')}
+                  className="inline-flex items-center gap-2 rounded-full border border-indigo-500/40 bg-indigo-500/10 px-3 py-1.5 text-[11px] font-semibold text-indigo-200 hover:bg-indigo-500/20 transition-colors"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Admin Console</span>
+                </button>
+              </div>
+            )}
 
             {/* Trust Metrics */}
             <div className="pt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-slate-800/80 text-left">
