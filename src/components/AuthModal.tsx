@@ -17,11 +17,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
   const [resetSent, setResetSent] = useState(false);
 
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('rajesh.sharma@powersense.ai');
-  const [password, setPassword] = useState('user123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<'user' | 'admin' | 'commercial'>('user');
   const [utilityProvider, setUtilityProvider] = useState('BESCOM (Bengaluru Electricity Supply Co.)');
-  const [consumerNumber, setConsumerNumber] = useState('08849-30219');
+  const [consumerNumber, setConsumerNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
@@ -141,40 +142,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
     }
   };
 
-  const handleSelectRoleCredentials = (selectedRole: 'user' | 'commercial' | 'admin') => {
-    setError(null);
-    if (selectedRole === 'user') {
-      setEmail('rajesh.sharma@powersense.ai');
-      setPassword('user123');
-      setRole('user');
-    } else if (selectedRole === 'commercial') {
-      setEmail('commercial.manager@powersense.ai');
-      setPassword('comm123');
-      setRole('commercial');
-    } else if (selectedRole === 'admin') {
-      setEmail('admin@powersense.ai');
-      setPassword('admin123');
-      setRole('admin');
-    }
-  };
-
-  const handleQuickDemo = async (demoRole: 'user' | 'commercial' | 'admin') => {
-    setLoading(true);
-    setError(null);
-    try {
-      let demoEmail = 'rajesh.sharma@powersense.ai';
-      if (demoRole === 'admin') demoEmail = 'admin@powersense.ai';
-      if (demoRole === 'commercial') demoEmail = 'commercial.manager@powersense.ai';
-
-      const res = await api.login(demoEmail, 'demo123');
-      onSuccess(res.user);
-      onClose();
-    } catch (err: any) {
-      setError(err.message || 'Demo login failed');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Removed auto-populate functions to keep fields empty on page load
+  // Users must enter their own credentials
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
@@ -279,36 +248,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
         ) : (
           /* STANDARD SIGN IN / REGISTER MODE */
           <div className="space-y-4">
-            {/* Quick Credentials / Demo Selector */}
+            {/* Credentials section - fields start empty */}
             {!isRegister && (
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
-                  <span className="flex items-center space-x-1">
-                    <Key className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Select Role Credentials to Pre-fill:</span>
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleSelectRoleCredentials('user');
-                    }}
-                    className={`p-2 text-center rounded-lg border text-xs transition-all ${
-                      role === 'user' && email.includes('rajesh')
-                        ? 'bg-cyan-500/10 border-cyan-500 text-cyan-300'
-                        : 'bg-slate-900 hover:bg-slate-800 border-slate-700/60 text-slate-200'
-                    }`}
-                  >
-                    <UserCheck className="w-4 h-4 mx-auto mb-1 text-cyan-400" />
-                    <span className="block font-medium text-[11px]">Resident</span>
-                    <span className="block text-[9px] text-slate-500">user123</span>
-                  </button>
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                <p className="text-xs text-slate-400 font-medium">
+                  Enter your email and password to sign in.
+                </p>
+              </div>
+            )}
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleSelectRoleCredentials('commercial');
+            {/* Standard form section - removed auto-fill demo buttons to keep fields empty on load */}
+            <div className="space-y-4">
                     }}
                     className={`p-2 text-center rounded-lg border text-xs transition-all ${
                       role === 'commercial' || email.includes('commercial')
