@@ -5,21 +5,9 @@
       "root": ".",
       "framework": "vite",
       "excludeFiles": "{backend/**,api/**,.env*,.git/**,.agents/**,.codex/**}"
-    },
-    "backend": {
-      "root": "backend",
-      "framework": "fastapi",
-      "entrypoint": "main:app",
-      "excludeFiles": "{.env*,**/__pycache__/**,**/*.pyc}"
     }
   },
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": {
-        "service": "backend"
-      }
-    },
     {
       "source": "/(.*)",
       "destination": {
