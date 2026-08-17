@@ -50,7 +50,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ user, onSuccess }) => {
         password,
         role,
         utilityProvider,
-        consumerNumber,
+        consumerNumber: consumerNumber.trim(),
       });
       if (authResponse.user) {
         onSuccess(authResponse.user);
@@ -184,14 +184,13 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ user, onSuccess }) => {
           </div>
 
           <div className="space-y-1">
-            <label className="text-slate-300 font-medium">Consumer / meter number</label>
+            <label className="text-slate-300 font-medium">Consumer / meter number (optional)</label>
             <input
               type="text"
               value={consumerNumber}
               onChange={(e) => setConsumerNumber(e.target.value)}
-              placeholder="08849-30219"
+              placeholder="Add it later if needed"
               className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-cyan-500"
-              required
             />
           </div>
 
