@@ -9,6 +9,7 @@ app = FastAPI(title="PowerSense API", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=[settings.frontend_url], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 for route in (bills.router, predictions.router, chat.router, dashboard.router, profile.router, admin.router, engagement.router):
     app.include_router(route, prefix="/api")
+app.include_router(backend_api.router, prefix="/api")
 app.include_router(backend_api.router)
 
 @app.get("/health")

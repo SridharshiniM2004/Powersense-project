@@ -45,6 +45,8 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 FastAPI is available at `http://localhost:8000`; use `/health` for a health response and `/docs` for API documentation.
 
+The backend includes PaddleOCR dependencies. On standard serverless hosts these packages are large, so production deployment needs a backend runtime that supports large Python functions or containers.
+
 ## Run the frontend locally
 
 ```powershell
@@ -53,3 +55,23 @@ npm run dev
 ```
 
 Open the Vite URL shown in the terminal, normally `http://localhost:5173`.
+
+## Deploy on Vercel
+
+This repository includes `vercel.json` for Vercel Services. Configure the Vercel project framework as **Services**, then add these environment variables in Vercel:
+
+```env
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+VITE_API_URL=/api
+SUPABASE_URL=...
+SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+SUPABASE_BILLS_BUCKET=bills
+OPENROUTER_API_KEY=...
+OPENROUTER_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free
+FRONTEND_URL=https://your-vercel-domain.vercel.app
+VERCEL_SUPPORT_LARGE_FUNCTIONS=1
+```
+
+PaddleOCR makes the Python backend larger than the standard Vercel function limit. This project enables Fluid Compute in `vercel.json`; for existing Vercel projects, also set `VERCEL_SUPPORT_LARGE_FUNCTIONS=1` in Vercel and redeploy. Large Functions are required for the PaddleOCR backend.
