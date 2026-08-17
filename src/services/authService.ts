@@ -1,6 +1,8 @@
 import { AuthResponse } from '../types';
-import { api } from './api';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+
+const missingSupabaseConfigMessage =
+  'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel, then redeploy.';
 
 export const authService = {
   async login(email: string, password: string): Promise<AuthResponse> {
@@ -27,7 +29,7 @@ export const authService = {
       return { token: data.session?.access_token || '', user };
     }
 
-    return api.login(email, password);
+    throw new Error(missingSupabaseConfigMessage);
   },
 
   async register(input: {
@@ -69,7 +71,7 @@ export const authService = {
       return { token: data.session?.access_token || '', user };
     }
 
-    return api.register(input);
+    throw new Error(missingSupabaseConfigMessage);
   },
 
   async signOut() {
