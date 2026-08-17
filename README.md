@@ -61,7 +61,7 @@ Open the Vite URL shown in the terminal, normally `http://localhost:5173`.
 
 ## Deploy on Vercel
 
-This repository includes `vercel.json` for Vercel Services. Configure the Vercel project framework as **Services**, then add these environment variables in Vercel:
+This repository includes `vercel.json` for a Vite frontend and a Python serverless FastAPI function in `api/index.py`. Configure the Vercel project framework as **Vite**, then add these environment variables in Vercel:
 
 ```env
 VITE_SUPABASE_URL=...

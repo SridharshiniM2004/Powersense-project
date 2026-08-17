@@ -2,7 +2,6 @@ import { BillRecord, OCRResult, PredictionResult, MLPredictionInput, Recommendat
 import { supabase } from '../lib/supabase';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
-const API_ROOT = API_BASE.endsWith('/api') ? API_BASE.slice(0, -4) : API_BASE;
 async function request(path: string, init: RequestInit = {}) {
   if (!supabase) throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
   const { data } = await supabase.auth.getSession();
@@ -39,8 +38,8 @@ export const api = {
     return request('/bill/upload-ocr',{method:'POST',body:form});
   },
   predictUsage: (input: MLPredictionInput): Promise<PredictionResult> => request('/bill/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}),
-  predictUnits: (input: MLPredictionInput) => request(`${API_ROOT}/predict-units`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}),
-  predictBill: (input: MLPredictionInput) => request(`${API_ROOT}/predict-bill`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}),
+  predictUnits: (input: MLPredictionInput) => request('/predict-units',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}),
+  predictBill: (input: MLPredictionInput) => request('/predict-bill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}),
   getRecommendations: (): Promise<Recommendation[]> => request('/recommendations'),
   updateRecommendationStatus: (id:string,status:'new'|'in_progress'|'completed'): Promise<Recommendation> => request(`/recommendations/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})}),
   sendChatMessage: (message:string,history:{sender:string;text:string}[]) => request('/chatbot/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,history})}),
