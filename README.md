@@ -1,6 +1,6 @@
 # PowerSense — local development
 
-PowerSense runs locally with a React/Vite frontend, FastAPI backend, existing Supabase project, PaddleOCR, locally packaged ML models, and OpenRouter.
+PowerSense runs locally with a React/Vite frontend, FastAPI backend, existing Supabase project, OCR.space online OCR, locally packaged ML models, and OpenRouter.
 
 ## Prerequisites
 
@@ -18,6 +18,9 @@ SUPABASE_SERVICE_ROLE_KEY=your-server-only-service-role-key
 SUPABASE_BILLS_BUCKET=bills
 OPENROUTER_API_KEY=your-openrouter-key
 OPENROUTER_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free
+OCR_SPACE_API_KEY=your-free-ocr-space-key
+OCR_SPACE_ENDPOINT=https://api.ocr.space/parse/image
+OCR_SPACE_ENGINE=2
 FRONTEND_URL=http://localhost:5173
 UNITS_MODEL_PATH=models/electricity_units_model.pkl
 BILL_MODEL_PATH=models/electricity_bill_model.pkl
@@ -45,7 +48,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 FastAPI is available at `http://localhost:8000`; use `/health` for a health response and `/docs` for API documentation.
 
-The backend includes PaddleOCR dependencies. On standard serverless hosts these packages are large, so production deployment needs a backend runtime that supports large Python functions or containers.
+The deployed backend uses OCR.space for online OCR so the project can stay inside free hosting limits. Get a free OCR API key from `https://ocr.space/ocrapi`.
 
 ## Run the frontend locally
 
@@ -70,8 +73,10 @@ SUPABASE_SERVICE_ROLE_KEY=...
 SUPABASE_BILLS_BUCKET=bills
 OPENROUTER_API_KEY=...
 OPENROUTER_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free
+OCR_SPACE_API_KEY=...
+OCR_SPACE_ENDPOINT=https://api.ocr.space/parse/image
+OCR_SPACE_ENGINE=2
 FRONTEND_URL=https://your-vercel-domain.vercel.app
-VERCEL_SUPPORT_LARGE_FUNCTIONS=1
 ```
 
-PaddleOCR makes the Python backend larger than the standard Vercel function limit. This project enables Fluid Compute in `vercel.json`; for existing Vercel projects, also set `VERCEL_SUPPORT_LARGE_FUNCTIONS=1` in Vercel and redeploy. Large Functions are required for the PaddleOCR backend.
+This free deployment path uses Vercel for frontend/backend, Supabase free tier for data/auth, OCR.space free API for OCR, and a free OpenRouter model for chat. Free tiers can change and do not guarantee uptime, so keep usage small for demos and coursework.

@@ -31,7 +31,7 @@ def delete_bill(bill_id: str, user=Depends(current_user)):
 
 @router.post("/bill/upload-ocr")
 async def upload_ocr(file: UploadFile = File(...), user=Depends(current_user)):
-    if file.content_type not in {"image/jpeg","image/png","image/webp"}: raise HTTPException(415,"Upload a PNG, JPG, or WEBP image; PDFs require a page-rendering service.")
+    if file.content_type not in {"image/jpeg","image/png","image/webp","application/pdf"}: raise HTTPException(415,"Upload a PNG, JPG, WEBP, or PDF bill.")
     contents=await file.read()
     if len(contents)>10*1024*1024: raise HTTPException(413,"Bill file must be 10 MB or smaller")
     suffix=os.path.splitext(file.filename or "bill.png")[1]; local=os.path.join(tempfile.gettempdir(),f"powersense-{uuid.uuid4()}{suffix}")

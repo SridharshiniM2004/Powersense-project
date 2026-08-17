@@ -78,7 +78,7 @@ export const AdminPanel: React.FC = () => {
               <FileScan className="w-4 h-4 text-emerald-400" />
             </div>
             <p className="text-2xl font-black text-emerald-300 font-mono">{stats.totalBillsProcessed.toLocaleString()}</p>
-            <p className="text-[11px] text-slate-400">PaddleOCR Accuracy: <strong className="text-emerald-400">{stats.ocrAccuracyPercent}%</strong></p>
+            <p className="text-[11px] text-slate-400">OCR Accuracy: <strong className="text-emerald-400">{stats.ocrAccuracyPercent}%</strong></p>
           </div>
 
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2">

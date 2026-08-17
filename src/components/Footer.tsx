@@ -46,7 +46,7 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab }) => {
               </li>
               <li>
                 <button onClick={() => setActiveTab('ocr')} className="hover:text-cyan-400 transition-colors">
-                  PaddleOCR & Document Scanner
+                  Online OCR & Document Scanner
                 </button>
               </li>
               <li>
@@ -103,7 +103,7 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab }) => {
               </div>
               <div className="p-2 rounded bg-slate-900 border border-slate-800 text-slate-300 flex items-center justify-between">
                 <span>OCR & AI:</span>
-                <span className="font-mono text-indigo-400">PaddleOCR + OpenRouter</span>
+                <span className="font-mono text-indigo-400">OCR.space + OpenRouter</span>
               </div>
             </div>
           </div>

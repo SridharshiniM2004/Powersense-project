@@ -35,7 +35,7 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onBillAdded, setAc
 
   const handleFileUpload = async (file: File) => {
     setLoading(true);
-    setStatusMessage('Reading your bill securely with PaddleOCR...');
+    setStatusMessage('Reading your bill securely with online OCR...');
 
     const reader = new FileReader();
     reader.onload = async () => {
@@ -121,7 +121,7 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onBillAdded, setAc
         <div className="space-y-2">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>PaddleOCR & Multimodal Vision Extraction</span>
+            <span>Online OCR & Multimodal Vision Extraction</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
             Electricity Bill OCR Engine
@@ -430,7 +430,7 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onBillAdded, setAc
                 {/* Raw Snippets Tab */}
                 {activeTab === 'rawText' && (
                   <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2 font-mono text-[11px] text-slate-300">
-                    <p className="text-slate-400 font-semibold mb-2">PaddleOCR Detected Text Fragments:</p>
+                    <p className="text-slate-400 font-semibold mb-2">OCR Detected Text Fragments:</p>
                     {ocrResult.rawTextSnippets.map((snippet, idx) => (
                       <div key={idx} className="p-2 bg-slate-900 rounded border border-slate-800/80">
                         {snippet}
@@ -441,7 +441,7 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onBillAdded, setAc
 
                 <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
                   <span className="text-xs text-slate-400">
-                    Status: <strong className="text-emerald-400">PaddleOCR Extract Verified</strong>
+                    Status: <strong className="text-emerald-400">OCR Extract Verified</strong>
                   </span>
 
                   <button

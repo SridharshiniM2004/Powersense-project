@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     supabase_bills_bucket: str = "bills"
     openrouter_api_key: str = ""
     openrouter_model: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
+    ocr_space_api_key: str = ""
+    ocr_space_endpoint: str = "https://api.ocr.space/parse/image"
+    ocr_space_engine: int = 2
     frontend_url: str = "http://localhost:5173"
     # Portable local defaults; override through backend/.env when necessary.
     units_model_path: Path = BACKEND_DIR / "models" / "electricity_units_model.pkl"

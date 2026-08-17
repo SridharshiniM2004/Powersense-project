@@ -16,6 +16,10 @@ app.include_router(backend_api.router)
 def health():
     return {"status": "healthy"}
 
+@app.get("/api/health")
+def api_health():
+    return {"status": "healthy"}
+
 @app.get("/", include_in_schema=False)
 def home():
     return {"status": "ok"}

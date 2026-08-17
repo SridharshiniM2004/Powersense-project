@@ -72,8 +72,8 @@ def predict_bill(payload: PredictionInput, user=Depends(current_user)):
 
 @router.post("/upload-bill")
 async def upload_bill(file: UploadFile = File(...), user=Depends(current_user)):
-    if file.content_type not in {"application/pdf", "image/jpeg", "image/png"}:
-        raise HTTPException(415, "Supported file formats are PDF, JPG, JPEG, and PNG")
+    if file.content_type not in {"application/pdf", "image/jpeg", "image/png", "image/webp"}:
+        raise HTTPException(415, "Supported file formats are PDF, JPG, JPEG, PNG, and WEBP")
     content = await file.read()
     if not content or len(content) > 10 * 1024 * 1024:
         raise HTTPException(413, "Bill file must be between 1 byte and 10 MB")

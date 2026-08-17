@@ -83,7 +83,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab, onOpenAu
             <div className="pt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-slate-800/80 text-left">
               <div>
                 <p className="text-2xl font-black text-cyan-400">98.4%</p>
-                <p className="text-xs text-slate-400">PaddleOCR Accuracy</p>
+                <p className="text-xs text-slate-400">Online OCR Accuracy</p>
               </div>
               <div>
                 <p className="text-2xl font-black text-emerald-400">12.3 kWh</p>
@@ -230,7 +230,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab, onOpenAu
             <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
               <FileScan className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-white">PaddleOCR Bill Scanner</h3>
+            <h3 className="text-lg font-bold text-white">Online OCR Bill Scanner</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
               Upload utility bill photos or PDFs. Automatically parses meter readings, tariff categories, due dates, fixed charges, and net consumption with 98%+ accuracy.
             </p>
