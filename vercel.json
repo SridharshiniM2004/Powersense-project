@@ -1,31 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "fluid": true,
-  "services": {
-    "frontend": {
-      "root": ".",
-      "framework": "vite",
-      "excludeFiles": "{backend/**,.env*,.git/**,.agents/**,.codex/**}"
-    },
-    "backend": {
-      "root": "backend",
-      "framework": "fastapi",
-      "entrypoint": "main:app",
-      "excludeFiles": "{.env*,**/__pycache__/**,**/*.pyc,requirements-local.txt}"
-    }
-  },
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": {
-        "service": "backend"
-      }
-    },
-    {
       "source": "/(.*)",
-      "destination": {
-        "service": "frontend"
-      }
+      "destination": "/index.html"
     }
   ]
 }

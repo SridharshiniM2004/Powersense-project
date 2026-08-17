@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, LogIn, UserPlus, Shield, Building, UserCheck, Zap, Key, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { X, LogIn, UserPlus, Zap, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { api } from '../services/api';
 import { User } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -257,39 +257,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
               </div>
             )}
 
-            {/* Standard form section - removed auto-fill demo buttons to keep fields empty on load */}
-            <div className="space-y-4">
-                    }}
-                    className={`p-2 text-center rounded-lg border text-xs transition-all ${
-                      role === 'commercial' || email.includes('commercial')
-                        ? 'bg-emerald-500/10 border-emerald-500 text-emerald-300'
-                        : 'bg-slate-900 hover:bg-slate-800 border-slate-700/60 text-slate-200'
-                    }`}
-                  >
-                    <Building className="w-4 h-4 mx-auto mb-1 text-emerald-400" />
-                    <span className="block font-medium text-[11px]">Commercial</span>
-                    <span className="block text-[9px] text-slate-500">comm123</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleSelectRoleCredentials('admin');
-                    }}
-                    className={`p-2 text-center rounded-lg border text-xs transition-all ${
-                      role === 'admin' || email.includes('admin')
-                        ? 'bg-indigo-500/10 border-indigo-500 text-indigo-300'
-                        : 'bg-slate-900 hover:bg-slate-800 border-slate-700/60 text-slate-200'
-                    }`}
-                  >
-                    <Shield className="w-4 h-4 mx-auto mb-1 text-indigo-400" />
-                    <span className="block font-medium text-[11px]">Admin</span>
-                    <span className="block text-[9px] text-slate-500">admin123</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* Divider */}
             <div className="relative flex items-center justify-center">
               <div className="absolute inset-0 flex items-center">
@@ -378,12 +345,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                   </div>
 
                   <div>
-                    <label className="block text-slate-300 font-medium mb-1">Consumer / Meter Number</label>
+                    <label className="block text-slate-300 font-medium mb-1">Consumer / Meter Number (optional)</label>
                     <input
                       type="text"
                       value={consumerNumber}
                       onChange={(e) => setConsumerNumber(e.target.value)}
-                      placeholder="08849-30219"
+                      placeholder="Add it later if needed"
                       className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:border-cyan-500"
                     />
                   </div>
