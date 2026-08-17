@@ -3,8 +3,7 @@
   "services": {
     "frontend": {
       "root": ".",
-      "framework": "vite",
-      "excludeFiles": "{backend/**,api/**,.env*,.git/**,.agents/**,.codex/**}"
+      "framework": "vite"
     }
   },
   "rewrites": [
