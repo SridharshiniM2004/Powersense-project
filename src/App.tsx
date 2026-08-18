@@ -1,5 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
-import { Link, Routes, Route, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import {
   Zap,
   LayoutDashboard,
@@ -39,6 +39,7 @@ import { SignUpPage } from './pages/SignUpPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { AdminRoute } from './routes/AdminRoute';
+import { Navbar } from './components/Navbar';
 
 export function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -49,19 +50,28 @@ export function App() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [prediction, setPrediction] = useState<PredictionResult | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [authReady, setAuthReady] = useState(false);
+  const activeTab = ({ '/dashboard': 'dashboard', '/bill-ocr': 'ocr', '/ai-prediction': 'prediction', '/analytics': 'analytics', '/ai-chatbot': 'chatbot', '/tips-savings': 'recommendations', '/bill-history': 'history', '/profile': 'profile', '/admin': 'admin', '/settings': 'settings' } as Record<string, string>)[location.pathname] || 'landing';
 
   useEffect(() => {
     const initApp = async () => {
       try {
+        const restoredUser = await authService.getCurrentUser();
+        if (!restoredUser) return;
+        setUser(restoredUser);
         const bList = await billService.getBills();
         setBills(bList);
+        navigate('/dashboard', { replace: true });
       } catch (err) {
-        console.warn('Failed to load bills:', err);
+        console.warn('Failed to restore session:', err);
+      } finally {
+        setAuthReady(true);
       }
     };
 
     initApp();
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     localStorage.setItem('powersense-theme', theme);
@@ -97,66 +107,13 @@ export function App() {
     navigate('/sign-in');
   };
 
-  const navItems = [
-    { id: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: '/bill-ocr', label: 'Bill OCR', icon: FileScan },
-    { id: '/ai-prediction', label: 'AI Prediction', icon: TrendingUp },
-    { id: '/analytics', label: 'Analytics', icon: BarChart3 },
-    { id: '/ai-chatbot', label: 'AI Chatbot', icon: Bot },
-    { id: '/tips-savings', label: 'Tips & Savings', icon: Lightbulb },
-    { id: '/bill-history', label: 'Bill History', icon: History },
-    { id: '/profile', label: 'Profile', icon: UserIcon },
-    { id: '/settings', label: 'Settings', icon: SettingsIcon },
-  ];
-
-  if (user?.role === 'admin') {
-    navItems.splice(8, 0, { id: '/admin', label: 'Admin Panel', icon: ShieldCheck });
+  if (!authReady) {
+    return <div className="min-h-screen bg-slate-950 text-slate-300 grid place-items-center text-sm">Restoring your session...</div>;
   }
 
   return (
     <div className={`min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950 ${theme === 'light' ? 'theme-light' : ''}`}>
-      <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 via-teal-400 to-emerald-400 p-0.5 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
-              <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-                <Zap className="w-5 h-5 text-cyan-400 fill-cyan-400/20" />
-              </div>
-            </div>
-            <div className="flex flex-col">
-              <span className="font-black text-lg text-white tracking-tight leading-none group-hover:text-cyan-400 transition-colors">
-                Power<span className="text-cyan-400">Sense</span>
-              </span>
-              <span className="text-[10px] text-slate-400 tracking-wider font-semibold uppercase">
-                Smart Utility AI
-              </span>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-              className="p-2 rounded-xl text-slate-400 hover:text-cyan-400 hover:bg-slate-900 border border-slate-800 transition-colors"
-            >
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-            {user ? (
-              <button
-                onClick={handleLogout}
-                className="p-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-slate-900 border border-slate-800/50 transition-colors"
-                title="Log out"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            ) : (
-              <Link to="/sign-in" className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white border border-slate-800 hover:bg-slate-900 transition-colors">
-                Sign In
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
+      <Navbar activeTab={activeTab} setActiveTab={navigateToTab} user={user} onOpenAuth={() => navigate('/sign-in')} onLogout={handleLogout} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Routes>
@@ -264,3 +221,4 @@ export function App() {
 }
 
 export default App;
+

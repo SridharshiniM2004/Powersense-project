@@ -5,6 +5,26 @@ const missingSupabaseConfigMessage =
   'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.local, then restart the frontend.';
 
 export const authService = {
+  async getCurrentUser(): Promise<AuthResponse['user'] | null> {
+    if (!isSupabaseConfigured || !supabase) return null;
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) return null;
+    const user = data.user;
+    return {
+      id: user.id,
+      name: user.user_metadata?.name || user.email?.split('@')[0] || 'PowerSense User',
+      email: user.email || '',
+      role: user.user_metadata?.role || 'user',
+      utilityProvider: user.user_metadata?.utilityProvider || 'TNEB (Tamil Nadu Electricity Board)',
+      consumerNumber: user.user_metadata?.consumerNumber || '08849-30219',
+      sanctionedLoadKw: user.user_metadata?.sanctionedLoadKw || 6.5,
+      homeAreaSqFt: user.user_metadata?.homeAreaSqFt || 1850,
+      occupants: user.user_metadata?.occupants || 4,
+      createdAt: user.user_metadata?.createdAt || new Date().toISOString(),
+      avatarUrl: user.user_metadata?.avatarUrl || undefined,
+    };
+  },
+
   async login(email: string, password: string): Promise<AuthResponse> {
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });

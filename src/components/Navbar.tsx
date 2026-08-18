@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Zap,
   LayoutDashboard,
@@ -35,15 +35,31 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const closeOnOutsideClick = (event: MouseEvent | TouchEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setMobileMenuOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setMobileMenuOpen(false); };
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    document.addEventListener('touchstart', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick);
+      document.removeEventListener('touchstart', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, []);
 
   const mainNav = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'ocr', label: 'Bill OCR', icon: FileScan },
-    { id: 'prediction', label: 'ML Predictor', icon: TrendingUp },
+    { id: 'prediction', label: 'AI Prediction', icon: TrendingUp },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'recommendations', label: 'AI Optimization', icon: Lightbulb },
+    { id: 'recommendations', label: 'Tips & Savings', icon: Lightbulb },
     { id: 'history', label: 'Bill History', icon: History },
-    { id: 'chatbot', label: 'AI Assistant', icon: Bot, badge: 'AI' },
+    { id: 'chatbot', label: 'AI Chatbot', icon: Bot, badge: 'AI' },
   ];
 
   if (user?.role === 'admin') {
@@ -51,7 +67,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   }
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 text-slate-100 shadow-lg">
+    <header ref={menuRef} className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 text-slate-100 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Brand Logo */}
@@ -246,3 +262,4 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
+

@@ -16,11 +16,6 @@ export const SignInPage: React.FC<SignInPageProps> = ({ user, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleAdminFill = () => {
-    setEmail('rithanyagopi4@gmail.com');
-    setPassword('Powersense2026');
-    setError(null);
-  };
 
   useEffect(() => {
     if (user) {
@@ -108,25 +103,6 @@ export const SignInPage: React.FC<SignInPageProps> = ({ user, onSuccess }) => {
           </button>
         </form>
 
-        <div className="mt-6 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 p-4 text-left">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-indigo-300">Admin profile</p>
-              <p className="text-sm font-semibold text-white">PowerSense Administrator</p>
-            </div>
-            <button
-              type="button"
-              onClick={handleAdminFill}
-              className="rounded-lg border border-indigo-400/40 bg-indigo-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-indigo-200 hover:bg-indigo-500/20 transition-colors"
-            >
-              Use admin login
-            </button>
-          </div>
-          <div className="space-y-1 text-[11px] text-slate-300">
-            <p><span className="text-slate-400">Email:</span> rithanyagopi4@gmail.com</p>
-            <p><span className="text-slate-400">Password:</span> Powersense2026</p>
-          </div>
-        </div>
 
         <p className="mt-6 text-center text-xs text-slate-400">
           New to PowerSense?{' '}
@@ -138,3 +114,4 @@ export const SignInPage: React.FC<SignInPageProps> = ({ user, onSuccess }) => {
     </div>
   );
 };
+
