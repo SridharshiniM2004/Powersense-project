@@ -178,7 +178,7 @@ export function App() {
             path="/dashboard"
             element={
               <ProtectedRoute user={user}>
-                <Dashboard user={user} bills={bills} prediction={prediction} recommendations={recommendations} />
+                <Dashboard user={user} bills={bills} prediction={prediction} recommendations={recommendations} setActiveTab={navigateToTab} />
               </ProtectedRoute>
             }
           />
@@ -186,7 +186,7 @@ export function App() {
             path="/bill-ocr"
             element={
               <ProtectedRoute user={user}>
-                <BillUploadOCR onBillAdded={(newBill) => setBills((prev) => [newBill, ...prev])} />
+                <BillUploadOCR onBillAdded={(newBill) => setBills((prev) => [newBill, ...prev])} setActiveTab={navigateToTab} />
               </ProtectedRoute>
             }
           />
