@@ -2,7 +2,7 @@ import { AuthResponse } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const missingSupabaseConfigMessage =
-  'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel, then redeploy.';
+  'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.local, then restart the frontend.';
 
 export const authService = {
   async login(email: string, password: string): Promise<AuthResponse> {

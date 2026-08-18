@@ -12,6 +12,15 @@ export default defineConfig(() => {
       },
     },
     server: {
+      // During local development, route the frontend's relative /api requests
+      // to the FastAPI server. This keeps the production /api URL intact while
+      // avoiding a separate API URL or browser CORS configuration locally.
+      proxy: {
+        '/api': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+        },
+      },
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',

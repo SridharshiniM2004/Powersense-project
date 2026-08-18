@@ -5,5 +5,6 @@ pydantic-settings==2.8.1
 supabase==2.15.1
 httpx==0.28.1
 joblib==1.4.2
-numpy==1.26.4
+numpy==1.26.4; python_version < "3.13"
+numpy==2.2.6; python_version >= "3.13"
 scikit-learn==1.6.1

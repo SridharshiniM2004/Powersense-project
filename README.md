@@ -33,7 +33,8 @@ Create `.env.local` in the repository root:
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-public-anon-key
-VITE_API_URL=http://localhost:8000/api
+# Optional: normally leave this unset. Vite proxies /api to the local FastAPI server.
+# VITE_API_URL=http://localhost:8000/api
 ```
 
 ## Run FastAPI locally
@@ -42,11 +43,16 @@ VITE_API_URL=http://localhost:8000/api
 cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+python -m pip install -r requirements.txt
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 FastAPI is available at `http://localhost:8000`; use `/health` for a health response and `/docs` for API documentation.
+
+Node.js is not required to run or use the backend. Open `http://localhost:8000/docs`
+to use the interactive API interface. The React/Vite browser interface does require
+Node.js to build or serve locally; use an already deployed frontend, another API
+client, or the API docs if you do not want to install it.
 
 The deployed backend uses OCR.space for online OCR so the project can stay inside free hosting limits. Get a free OCR API key from `https://ocr.space/ocrapi`.
 
@@ -57,7 +63,13 @@ npm install
 npm run dev
 ```
 
+
 Open the Vite URL shown in the terminal, normally `http://localhost:5173`.
+
+The Vite development server proxies `/api/*` to `http://localhost:8000`, so start
+FastAPI first and keep `VITE_API_URL` unset for the standard local setup. If you
+set `VITE_API_URL=http://localhost:8000/api`, the backend's default CORS setting
+already permits the Vite frontend at `http://localhost:5173`.
 
 ## Deploy on Vercel
 
