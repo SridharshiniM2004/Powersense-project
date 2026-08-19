@@ -61,9 +61,17 @@ export function App() {
         const restoredUser = await authService.getCurrentUser();
         if (!restoredUser) return;
         setUser(restoredUser);
-        const bList = await billService.getBills();
-        setBills(bList);
-        setRecommendations(await api.getRecommendations());
+        setAuthReady(true);
+        try {
+          const [bList, savedRecommendations] = await Promise.all([
+            billService.getBills(),
+            api.getRecommendations(),
+          ]);
+          setBills(bList);
+          setRecommendations(savedRecommendations);
+        } catch (err) {
+          console.warn('Signed in, but initial PowerSense data could not be loaded:', err);
+        }
       } catch (err) {
         console.warn('Failed to restore session:', err);
       } finally {
