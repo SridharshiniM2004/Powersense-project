@@ -83,15 +83,20 @@ def _table_values(lines: list[str]) -> dict[str, str]:
         "paymentStatus": ("payment status", "status"),
     }
     normalized = [_clean_line(line) for line in lines]
+    # Ignore OCR title/disclaimer text. A table normally starts at its Field /
+    # Particulars header; everything before it must never be paired to a bill field.
+    table_start = next((index for index, line in enumerate(normalized) if line in {"field", "particulars", "description"}), 0)
+    scoped_lines = lines[table_start:]
+    scoped_normalized = normalized[table_start:]
     label_at: dict[int, str] = {}
-    for index, line in enumerate(normalized):
+    for index, line in enumerate(scoped_normalized):
         for field, names in aliases.items():
             if any(line == name or line.startswith(f"{name} ") for name in names):
                 label_at[index] = field
                 break
     values: dict[str, str] = {}
     for index, field in label_at.items():
-        raw = lines[index]
+        raw = scoped_lines[index]
         # A same-line label/value pair is the most reliable format.
         for alias in aliases[field]:
             match = re.match(rf"{re.escape(alias)}\s*[:\-]?\s*(.+)$", _clean_line(raw), re.I)
@@ -110,7 +115,7 @@ def _table_values(lines: list[str]) -> dict[str, str]:
             end += 1
         labels = [label_at[i] for i in range(start, end + 1)]
         if len(labels) >= 3:
-            candidates = [lines[i] for i in range(end + 1, len(lines)) if i not in label_at]
+            candidates = [scoped_lines[i] for i in range(end + 1, len(scoped_lines)) if i not in label_at]
             if len(candidates) >= len(labels):
                 for field, value in zip(labels, candidates):
                     values.setdefault(field, value.strip())
@@ -118,7 +123,7 @@ def _table_values(lines: list[str]) -> dict[str, str]:
     # PDF table extraction can also produce all labels in one column and all
     # values in another. Pair the full columns when their counts line up.
     ordered_labels = [label_at[i] for i in sorted(label_at)]
-    ordered_values = [line.strip() for i, line in enumerate(lines) if i not in label_at and _clean_line(line) not in {"field", "sample value", "value"}]
+    ordered_values = [line.strip() for i, line in enumerate(scoped_lines) if i not in label_at and _clean_line(line) not in {"field", "sample value", "value"}]
     if len(ordered_labels) >= 3 and len(ordered_values) >= len(ordered_labels):
         for field, value in zip(ordered_labels, ordered_values):
             values.setdefault(field, value)
