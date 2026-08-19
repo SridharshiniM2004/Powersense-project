@@ -19,12 +19,14 @@ import { BillRecord } from '../types';
 interface BillHistoryProps {
   bills: BillRecord[];
   onBillDeleted: (id: string) => void;
+  onBillSelected: (id: string) => Promise<void>;
   setActiveTab: (tab: string) => void;
 }
 
 export const BillHistory: React.FC<BillHistoryProps> = ({
   bills,
   onBillDeleted,
+  onBillSelected,
   setActiveTab,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -147,7 +149,7 @@ export const BillHistory: React.FC<BillHistoryProps> = ({
                   </td>
                   <td className="px-4 py-3 text-right space-x-2">
                     <button
-                      onClick={() => setSelectedBill(b)}
+                      onClick={async () => { await onBillSelected(b.id); setSelectedBill(b); }}
                       className="p-1.5 text-cyan-400 hover:text-cyan-200 bg-slate-950 hover:bg-slate-800 rounded-lg border border-slate-800 transition-colors"
                       title="View Details"
                     >

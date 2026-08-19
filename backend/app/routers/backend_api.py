@@ -37,16 +37,16 @@ class PredictionInput(BaseModel):
     tariffCategory: str = "Residential"
     avgTemperatureC: float
 
-def _store_prediction(payload: dict, user_id: str, units: float, bill: float, analysis: dict | None = None) -> dict:
+def _store_prediction(payload: dict, user_id: str, units: float, bill: float, analysis: dict | None = None, bill_id: str | None = None) -> dict:
     result = {"predicted_units": round(units, 2), "predicted_bill": round(bill, 2), **(analysis or {})}
     try:
-        service_client().table("predictions").insert({"user_id": user_id, "input": payload, "predicted_units": units, "predicted_bill": bill, "result": result}).execute()
+        service_client().table("predictions").insert({"user_id": user_id, "bill_id": bill_id, "input": payload, "predicted_units": units, "predicted_bill": bill, "result": result}).execute()
         return result
     except Exception as exc:
         logger.exception("Unable to persist prediction for user %s", user_id)
         raise HTTPException(502, "Prediction completed but could not be saved") from exc
 
-def _automatic_prediction(db, user_id: str, extracted: dict) -> tuple[dict, dict]:
+def _automatic_prediction(db, user_id: str, extracted: dict, bill_id: str) -> tuple[dict, dict]:
     """Builds inference input from the authenticated user's persisted bill/profile data."""
     profile = db.table("profiles").select("sanctioned_load_kw,home_area_sqft,occupants").eq("id", user_id).maybe_single().execute().data or {}
     history_rows = db.table("electricity_bills").select("units_consumed_kwh").eq("user_id", user_id).order("created_at", desc=True).limit(24).execute().data
@@ -56,7 +56,7 @@ def _automatic_prediction(db, user_id: str, extracted: dict) -> tuple[dict, dict
     tariff_text = (extracted.get("tariffCategory") or extracted.get("connectionType") or "").lower()
     tariff = "Industrial" if "industrial" in tariff_text else "Commercial" if "commercial" in tariff_text else "Residential"
     now = datetime.now(timezone.utc)
-    payload = {"historyUnits": history, "billingMonth": (now.month % 12) + 1, "homeAreaSqFt": float(profile.get("home_area_sqft") or 0), "occupants": int(profile.get("occupants") or 0), "acCount": 0, "acAverageHoursDaily": 0, "hasEvCharger": False, "hasSolarPanels": False, "solarCapacityKw": 0, "hasWaterHeater": False, "heavyHvacUsage": False, "sanctionedLoadKw": float(profile.get("sanctioned_load_kw") or 0), "tariffCategory": tariff, "avgTemperatureC": 0}
+    payload = {"sourceBillId": bill_id, "historyUnits": history, "billingMonth": (now.month % 12) + 1, "homeAreaSqFt": float(profile.get("home_area_sqft") or 0), "occupants": int(profile.get("occupants") or 0), "acCount": 0, "acAverageHoursDaily": 0, "hasEvCharger": False, "hasSolarPanels": False, "solarCapacityKw": 0, "hasWaterHeater": False, "heavyHvacUsage": False, "sanctionedLoadKw": float(profile.get("sanctioned_load_kw") or 0), "tariffCategory": tariff, "avgTemperatureC": 0}
     units, bill = predict(payload)
     current_units = float(extracted.get("unitsConsumedKwh") or 0)
     current_bill = float(extracted.get("amountDue") or 0)
@@ -74,7 +74,7 @@ def _automatic_prediction(db, user_id: str, extracted: dict) -> tuple[dict, dict
         "estimatedSavingsKwh": round(max(0, current_units - units), 2),
         "anomaly": anomaly or {"detected": False},
     }
-    return _store_prediction(payload, user_id, units, bill, analysis), {**analysis, "currentUnits": current_units, "currentBill": current_bill, "historyUnits": history}
+    return _store_prediction(payload, user_id, units, bill, analysis, bill_id), {**analysis, "currentUnits": current_units, "currentBill": current_bill, "historyUnits": history}
 
 @router.post("/predict-units")
 def predict_units(payload: PredictionInput, user=Depends(current_user)):
@@ -118,13 +118,13 @@ async def upload_bill(file: UploadFile = File(...), user=Depends(current_user)):
             "breakdown": {},
         }).execute().data[0]
         try:
-            prediction, analysis_context = _automatic_prediction(db, user["id"], parsed)
+            prediction, analysis_context = _automatic_prediction(db, user["id"], parsed, bill["id"])
             recommendation_warning = None
             try:
                 generated = await personalized_recommendations({**analysis_context, "predictedUnits": prediction["predicted_units"], "predictedBill": prediction["predicted_bill"]})
                 for item in generated:
                     db.table("recommendations").insert({
-                        "user_id": user["id"], "title": str(item["title"]), "category": str(item.get("category") or "Behavioral Shifting"),
+                        "user_id": user["id"], "bill_id": bill["id"], "title": str(item["title"]), "category": str(item.get("category") or "Behavioral Shifting"),
                         "description": str(item["description"]), "estimated_monthly_savings": float(item.get("estimatedMonthlySavings") or 0),
                         "estimated_kwh_savings": float(item.get("estimatedKwhSavings") or 0), "implementation_cost": str(item.get("implementationCost") or ""),
                         "payback_months": float(item.get("paybackMonths") or 0), "impact_level": str(item.get("impactLevel") or "Low"),
@@ -171,6 +171,24 @@ def history(user=Depends(current_user)):
     except Exception as exc:
         logger.exception("Unable to read history for user %s", user["id"])
         raise HTTPException(502, "Unable to read history") from exc
+
+@router.get("/bills/{bill_id}/analysis")
+def bill_analysis(bill_id: str, user=Depends(current_user)):
+    """Returns only the analysis associated with one verified bill selection."""
+    try:
+        db = service_client()
+        bill = db.table("electricity_bills").select("*").eq("id", bill_id).eq("user_id", user["id"]).maybe_single().execute().data
+        if not bill:
+            raise HTTPException(404, "Bill not found")
+        ocr = db.table("ocr_results").select("*").eq("user_id", user["id"]).eq("file_path", bill.get("file_url") or "").order("created_at", desc=True).limit(1).execute().data
+        prediction = db.table("predictions").select("*").eq("user_id", user["id"]).eq("bill_id", bill_id).order("created_at", desc=True).limit(1).execute().data
+        recommendations = db.table("recommendations").select("*").eq("user_id", user["id"]).eq("bill_id", bill_id).order("created_at", desc=True).execute().data
+        return {"bill": bill, "ocr": ocr[0] if ocr else None, "prediction": prediction[0] if prediction else None, "recommendations": recommendations}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Unable to load analysis for bill %s", bill_id)
+        raise HTTPException(502, "Unable to load this bill's analysis") from exc
 
 @router.get("/profile")
 def get_profile(user=Depends(current_user)):

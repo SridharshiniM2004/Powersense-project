@@ -31,6 +31,7 @@ export const api = {
   getBills: (): Promise<BillRecord[]> => request('/bills'),
   createBill: (data: Partial<BillRecord>): Promise<BillRecord> => request('/bills',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}),
   deleteBill: (id:string): Promise<void> => request(`/bills/${id}`,{method:'DELETE'}),
+  getBillAnalysis: (id: string) => request(`/bills/${id}/analysis`),
   async processOCR(input: File | {imageBase64?: string; mimeType?: string; samplePreset?: unknown}): Promise<OCRResult> {
     const form=new FormData();
     if (input instanceof File) form.append('file',input);

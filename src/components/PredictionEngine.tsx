@@ -22,11 +22,12 @@ import { PredictionResult, MLPredictionInput, BillRecord } from '../types';
 
 interface PredictionEngineProps {
   bills: BillRecord[];
+  activePrediction: PredictionResult | null;
 }
 
-export const PredictionEngine: React.FC<PredictionEngineProps> = ({ bills }) => {
+export const PredictionEngine: React.FC<PredictionEngineProps> = ({ bills, activePrediction }) => {
   const [loading, setLoading] = useState(false);
-  const [prediction, setPrediction] = useState<PredictionResult | null>(null);
+  const [prediction, setPrediction] = useState<PredictionResult | null>(activePrediction);
 
   // Form Inputs for ML Model
   const [billingMonth, setBillingMonth] = useState<number>(8); // August
@@ -72,19 +73,8 @@ export const PredictionEngine: React.FC<PredictionEngineProps> = ({ bills }) => 
   };
 
   useEffect(() => {
-    runPrediction();
-  }, [
-    billingMonth,
-    homeAreaSqFt,
-    occupants,
-    acCount,
-    acAverageHoursDaily,
-    hasEvCharger,
-    hasSolarPanels,
-    solarCapacityKw,
-    heavyHvacUsage,
-    avgTemperatureC,
-  ]);
+    setPrediction(activePrediction);
+  }, [activePrediction]);
 
   return (
     <div className="space-y-8 pb-12">

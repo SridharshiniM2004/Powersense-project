@@ -108,6 +108,26 @@ export function App() {
     navigate('/sign-in');
   };
 
+  const activateBill = async (billId: string, knownBills: BillRecord[] = bills) => {
+    localStorage.setItem('powersense-active-bill-id', billId);
+    const analysis = await api.getBillAnalysis(billId);
+    setBills([...(knownBills || [])].sort((a, b) => (a.id === billId ? -1 : b.id === billId ? 1 : 0)));
+    const stored = analysis.prediction;
+    if (stored) {
+      const result = stored.result || {};
+      setPrediction({
+        predictedUnitsKwh: Number(stored.predicted_units), predictedAmount: Number(stored.predicted_bill),
+        confidenceLowerUnits: 0, confidenceUpperUnits: 0, confidenceLowerAmount: 0, confidenceUpperAmount: 0,
+        monthOverMonthChangePercent: 0, peakDemandKw: 0, co2EmissionsKg: Number(result.carbonKg || 0), tierBreakdown: [], keyCostDrivers: [],
+      });
+    } else setPrediction(null);
+    setRecommendations((analysis.recommendations || []).map((item: any) => ({
+      id: item.id, title: item.title, category: item.category || 'Behavioral Shifting', description: item.description,
+      estimatedMonthlySavings: Number(item.estimated_monthly_savings || 0), estimatedKwhSavings: Number(item.estimated_kwh_savings || 0),
+      implementationCost: item.implementation_cost || '', paybackMonths: Number(item.payback_months || 0), impactLevel: item.impact_level || 'Low', status: item.status || 'new',
+    })));
+  };
+
   const handleAnalysisComplete = async (result: any) => {
     try {
       const [updatedBills, updatedRecommendations] = await Promise.all([
@@ -116,6 +136,7 @@ export function App() {
       ]);
       setBills(updatedBills);
       setRecommendations(updatedRecommendations);
+      if (result.bill_id) await activateBill(result.bill_id, updatedBills);
       const automated = result.automation;
       if (automated?.status === 'completed' && automated.prediction) {
         const analysis = automated.analysis || {};
@@ -184,7 +205,7 @@ export function App() {
             path="/ai-prediction"
             element={
               <ProtectedRoute user={user}>
-                <PredictionEngine bills={bills} />
+                <PredictionEngine bills={bills} activePrediction={prediction} />
               </ProtectedRoute>
             }
           />
@@ -216,7 +237,7 @@ export function App() {
             path="/bill-history"
             element={
               <ProtectedRoute user={user}>
-                <BillHistory bills={bills} onBillDeleted={(id) => setBills((prev) => prev.filter((b) => b.id !== id))} />
+                <BillHistory bills={bills} onBillDeleted={(id) => setBills((prev) => prev.filter((b) => b.id !== id))} onBillSelected={activateBill} setActiveTab={navigateToTab} />
               </ProtectedRoute>
             }
           />
