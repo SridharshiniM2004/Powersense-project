@@ -1,7 +1,8 @@
 import { BillRecord, OCRResult, PredictionResult, MLPredictionInput, Recommendation, AdminStats, UserSettings, User, AuthResponse } from '../types';
 import { supabase } from '../lib/supabase';
 
-const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/+$/, '');
+const configuredApiBase = (import.meta.env.VITE_API_URL || '/api').replace(/\/+$/, '');
+const API_BASE = configuredApiBase.endsWith('/api') ? configuredApiBase : `${configuredApiBase}/api`;
 async function request(path: string, init: RequestInit = {}) {
   if (!supabase) throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
   const { data } = await supabase.auth.getSession();
