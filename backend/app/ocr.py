@@ -19,6 +19,14 @@ def _number(pattern: str, text: str) -> float:
         return 0.0
 
 
+def _first_number(patterns: list[str], text: str) -> float:
+    for pattern in patterns:
+        value = _number(pattern, text)
+        if value:
+            return value
+    return 0.0
+
+
 def _error_message(payload: dict) -> str:
     message = payload.get("ErrorMessage") or payload.get("ErrorDetails") or "Online OCR failed"
     if isinstance(message, list):
@@ -61,16 +69,24 @@ def extract(path: str) -> dict:
     text = "\n".join((item.get("ParsedText") or "").strip() for item in parsed_results).strip()
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     confidence = 0.85 if lines else 0
-    units = _number(r"(?:units?|consumption|kwh)\s*[:\-]?\s*([\d,.]+)", text)
-    amount = _number(r"(?:amount\s*(?:due|payable)|total)\s*[:\-]?\s*(?:rs\.?|inr)?\s*([\d,.]+)", text)
+    units = _first_number([
+        r"(?:total\s*)?(?:units?\s*(?:consumed|used)?|consumption|energy\s*consumed|kwh)\s*(?:\([^)]*\))?\s*[:\-]?\s*([\d,.]+)",
+        r"([\d,.]+)\s*(?:units?|kwh)\b",
+    ], text)
+    amount = _first_number([
+        r"(?:net\s*)?(?:total\s*)?(?:amount\s*)?(?:due|payable|to\s*be\s*paid|bill\s*amount|current\s*charges|total\s*charges)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:rs\.?|inr|₹)?\s*([\d,.]+)",
+        r"(?:grand\s*total|total\s*amount)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:rs\.?|inr|₹)?\s*([\d,.]+)",
+    ], text)
     fields = {
         "consumerName": _find(r"(?:consumer|customer)\s*name\s*[:\-]?\s*([^\n]+)", text),
         "consumerNumber": _find(r"(?:consumer|account)\s*(?:no|number|id)\s*[:\-]?\s*([^\n]+)", text),
         "meterNumber": _find(r"meter\s*(?:no|number)\s*[:\-]?\s*([^\n]+)", text),
         "billNumber": _find(r"(?:bill|invoice)\s*(?:no|number)\s*[:\-]?\s*([^\n]+)", text),
-        "billingMonth": _find(r"billing\s*(?:month|period)\s*[:\-]?\s*([^\n]+)", text),
-        "billingDate": _find(r"(?:bill|issue)\s*date\s*[:\-]?\s*([^\n]+)", text),
-        "dueDate": _find(r"due\s*date\s*[:\-]?\s*([^\n]+)", text),
+        "billingMonth": _find(r"(?:billing\s*(?:month|period)|bill\s*period|period\s*of\s*supply)\s*[:\-]?\s*([^\n]+)", text),
+        "issueDate": _find(r"(?:bill|issue|reading)\s*date\s*[:\-]?\s*([^\n]+)", text),
+        "dueDate": _find(r"(?:due\s*date|last\s*date\s*for\s*payment)\s*[:\-]?\s*([^\n]+)", text),
+        "previousReading": _first_number([r"(?:previous|old)\s*(?:meter\s*)?(?:reading)\s*[:\-]?\s*([\d,.]+)"], text),
+        "currentReading": _first_number([r"(?:current|present|new)\s*(?:meter\s*)?(?:reading)\s*[:\-]?\s*([\d,.]+)"], text),
         "unitsConsumedKwh": units,
         "amountDue": amount,
         "tariffCategory": _find(r"tariff\s*[:\-]?\s*([^\n]+)", text),
