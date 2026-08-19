@@ -27,36 +27,31 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onBillAdded, setAc
   const [loading, setLoading] = useState(false);
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
   const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [activeTab, setEditTab] = useState<'fields' | 'breakdown' | 'rawText'>('fields');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [automation, setAutomation] = useState<{ status: string; prediction?: { predicted_units: number; predicted_bill: number }; message?: string } | null>(null);
 
   // Editable Form State
   const [formState, setFormState] = useState<Partial<OCRResult>>({});
 
   const handleFileUpload = async (file: File) => {
     setLoading(true);
-    setStatusMessage('Reading your bill securely with online OCR...');
-
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const base64Str = reader.result as string;
-      setUploadedImagePreview(base64Str);
-
-      try {
-        const result = await api.processOCR({
-          imageBase64: base64Str,
-          mimeType: file.type || 'image/png',
-        });
-        setOcrResult(result);
-        setFormState(result);
-        setStatusMessage(null);
-      } catch (err: any) {
-        setStatusMessage(`OCR Processing Error: ${err.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-    reader.readAsDataURL(file);
+    setAutomation(null);
+    setSelectedFileName(file.name);
+    setStatusMessage('Uploading bill, extracting data, and running trained models...');
+    setUploadedImagePreview(file.type.startsWith('image/') ? URL.createObjectURL(file) : null);
+    try {
+      const result = await api.uploadBillForAnalysis(file);
+      setOcrResult(result.ocr);
+      setFormState(result.ocr);
+      setAutomation(result.automation);
+      setStatusMessage(result.automation?.status === 'completed' ? 'Bill analysis completed automatically.' : result.automation?.message || 'Bill uploaded, but automatic prediction could not be completed.');
+    } catch (err: any) {
+      setStatusMessage(`Bill processing error: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePresetSelect = async (preset: typeof SAMPLE_BILL_PRESETS[0]) => {
@@ -131,18 +126,6 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onBillAdded, setAc
           </p>
         </div>
 
-        {ocrResult && (
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={handleSaveBill}
-              disabled={loading}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-bold text-xs hover:from-cyan-400 hover:to-emerald-400 shadow-lg shadow-cyan-500/20 transition-all flex items-center space-x-2"
-            >
-              <Save className="w-4 h-4" />
-              <span>Verify & Save Bill</span>
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Preset Sample Selector Bar */}
@@ -218,7 +201,7 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onBillAdded, setAc
                 <div className="flex items-center justify-between text-xs text-slate-400">
                   <span className="flex items-center space-x-1">
                     <ImageIcon className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Uploaded Bill Document</span>
+                    <span>{selectedFileName || 'Uploaded Bill Document'}</span>
                   </span>
                   {ocrResult && (
                     <span className="text-emerald-400 font-bold font-mono text-[11px]">
@@ -439,18 +422,13 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onBillAdded, setAc
                   </div>
                 )}
 
-                <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-                  <span className="text-xs text-slate-400">
-                    Status: <strong className="text-emerald-400">OCR Extract Verified</strong>
-                  </span>
-
-                  <button
-                    onClick={handleSaveBill}
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-bold text-xs hover:from-cyan-400 hover:to-emerald-400 shadow-lg shadow-cyan-500/15 transition-all flex items-center space-x-2"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>Save to Bill History</span>
-                  </button>
+                <div className="pt-4 border-t border-slate-800 space-y-3">
+                  <span className="text-xs text-slate-400">Status: <strong className="text-emerald-400">Bill saved and OCR extraction complete</strong></span>
+                  {automation?.status === 'completed' && automation.prediction && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30"><span className="block text-slate-400">Predicted consumption</span><strong className="text-indigo-200 text-base">{automation.prediction.predicted_units} kWh</strong></div>
+                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30"><span className="block text-slate-400">Predicted bill</span><strong className="text-emerald-200 text-base">?{automation.prediction.predicted_bill}</strong></div>
+                  </div>}
+                  {automation?.status === 'prediction_failed' && <p className="text-xs text-amber-300">Model analysis could not finish: {automation.message}</p>}
                 </div>
               </>
             )}

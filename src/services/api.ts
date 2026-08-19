@@ -37,6 +37,11 @@ export const api = {
     else if (input.imageBase64) { const blob=await (await fetch(input.imageBase64)).blob(); form.append('file',blob,`bill.${(input.mimeType || 'image/png').split('/')[1]}`); }
     else throw new Error('Select an electricity bill image to scan.');
     return request('/bill/upload-ocr',{method:'POST',body:form});
+  async uploadBillForAnalysis(file: File) {
+    const form = new FormData();
+    form.append('file', file);
+    return request('/upload-bill', { method: 'POST', body: form });
+  },
   },
   predictUsage: (input: MLPredictionInput): Promise<PredictionResult> => request('/bill/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}),
   predictUnits: (input: MLPredictionInput) => request('/predict-units',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}),
