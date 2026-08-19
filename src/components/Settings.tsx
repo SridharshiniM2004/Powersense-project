@@ -1,13 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Save, CheckCircle2, DollarSign, Bell, Bot, Sliders } from 'lucide-react';
+import { Settings as SettingsIcon, Save, CheckCircle2, DollarSign, Bell, Bot, Sliders, Sun, Moon } from 'lucide-react';
 import { api } from '../services/api';
 import { UserSettings } from '../types';
 
-export const Settings: React.FC = () => {
-  const [settings, setSettings] = useState<UserSettings | null>(null);
+interface SettingsProps {
+  theme: 'dark' | 'light';
+  onThemeChange: (theme: 'dark' | 'light') => void;
+}
+
+const DEFAULT_SETTINGS: UserSettings = {
+  currency: 'INR', currencySymbol: 'Rs.', unitType: 'kWh', alertThresholdPercent: 20,
+  emailNotifications: true, smsNotifications: false, highBillAlerts: true,
+  weeklySummary: true, aiChatModel: 'nvidia/nemotron-3-ultra-550b-a55b:free',
+};
+
+export const Settings: React.FC<SettingsProps> = ({ theme, onThemeChange }) => {
+  const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -16,6 +28,8 @@ export const Settings: React.FC = () => {
         setSettings(s);
       } catch (err: any) {
         console.error('Settings fetch error:', err);
+        setSettings(DEFAULT_SETTINGS);
+        setLoadError('Saved preferences could not be loaded. You can still choose a theme and update settings once the connection is restored.');
       } finally {
         setLoading(false);
       }
@@ -25,7 +39,7 @@ export const Settings: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!settings) return;
+
     setSaving(true);
     setSuccess(false);
     try {
@@ -40,7 +54,7 @@ export const Settings: React.FC = () => {
     }
   };
 
-  if (loading || !settings) {
+  if (loading) {
     return (
       <div className="p-12 text-center text-xs text-slate-400 bg-slate-900 rounded-3xl border border-slate-800">
         Loading PowerSense Application Settings...
@@ -68,6 +82,19 @@ export const Settings: React.FC = () => {
             <span>Settings saved successfully!</span>
           </div>
         )}
+
+        {loadError && <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-200">{loadError}</div>}
+
+        <div className="space-y-3">
+          <h2 className="text-sm font-bold text-white border-b border-slate-800 pb-2 flex items-center space-x-2">
+            {theme === 'dark' ? <Moon className="w-4 h-4 text-cyan-400" /> : <Sun className="w-4 h-4 text-amber-400" />}
+            <span>Appearance</span>
+          </h2>
+          <div className="flex flex-wrap gap-3">
+            <button type="button" onClick={() => onThemeChange('dark')} className={`px-4 py-2 rounded-xl border text-xs font-semibold ${theme === 'dark' ? 'bg-cyan-500 text-slate-950 border-cyan-400' : 'bg-slate-950 text-slate-300 border-slate-800'}`}>Dark theme</button>
+            <button type="button" onClick={() => onThemeChange('light')} className={`px-4 py-2 rounded-xl border text-xs font-semibold ${theme === 'light' ? 'bg-cyan-500 text-slate-950 border-cyan-400' : 'bg-slate-950 text-slate-300 border-slate-800'}`}>Light theme</button>
+          </div>
+        </div>
 
         {/* Currency & Units */}
         <div className="space-y-4">
@@ -207,3 +234,5 @@ export const Settings: React.FC = () => {
     </div>
   );
 };
+
+

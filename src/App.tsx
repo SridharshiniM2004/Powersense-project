@@ -199,7 +199,7 @@ export function App() {
             path="/settings"
             element={
               <ProtectedRoute user={user}>
-                <Settings />
+                <Settings theme={theme} onThemeChange={setTheme} />
               </ProtectedRoute>
             }
           />
