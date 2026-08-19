@@ -14,7 +14,7 @@ from ..config import settings
 from ..deps import current_user, service_client
 from ..ocr import extract
 from ..ml import predict
-from .chat import Message, message
+from .chat import Message, message, personalized_recommendations
 from .profile import ProfileUpdate, me, update
 from .dashboard import dashboard
 
@@ -37,8 +37,8 @@ class PredictionInput(BaseModel):
     tariffCategory: str = "Residential"
     avgTemperatureC: float
 
-def _store_prediction(payload: dict, user_id: str, units: float, bill: float) -> dict:
-    result = {"predicted_units": round(units, 2), "predicted_bill": round(bill, 2)}
+def _store_prediction(payload: dict, user_id: str, units: float, bill: float, analysis: dict | None = None) -> dict:
+    result = {"predicted_units": round(units, 2), "predicted_bill": round(bill, 2), **(analysis or {})}
     try:
         service_client().table("predictions").insert({"user_id": user_id, "input": payload, "predicted_units": units, "predicted_bill": bill, "result": result}).execute()
         return result
@@ -46,7 +46,7 @@ def _store_prediction(payload: dict, user_id: str, units: float, bill: float) ->
         logger.exception("Unable to persist prediction for user %s", user_id)
         raise HTTPException(502, "Prediction completed but could not be saved") from exc
 
-def _automatic_prediction(db, user_id: str, extracted: dict) -> dict:
+def _automatic_prediction(db, user_id: str, extracted: dict) -> tuple[dict, dict]:
     """Builds inference input from the authenticated user's persisted bill/profile data."""
     profile = db.table("profiles").select("sanctioned_load_kw,home_area_sqft,occupants").eq("id", user_id).maybe_single().execute().data or {}
     history_rows = db.table("electricity_bills").select("units_consumed_kwh").eq("user_id", user_id).order("created_at", desc=True).limit(24).execute().data
@@ -58,7 +58,23 @@ def _automatic_prediction(db, user_id: str, extracted: dict) -> dict:
     now = datetime.now(timezone.utc)
     payload = {"historyUnits": history, "billingMonth": (now.month % 12) + 1, "homeAreaSqFt": float(profile.get("home_area_sqft") or 0), "occupants": int(profile.get("occupants") or 0), "acCount": 0, "acAverageHoursDaily": 0, "hasEvCharger": False, "hasSolarPanels": False, "solarCapacityKw": 0, "hasWaterHeater": False, "heavyHvacUsage": False, "sanctionedLoadKw": float(profile.get("sanctioned_load_kw") or 0), "tariffCategory": tariff, "avgTemperatureC": 0}
     units, bill = predict(payload)
-    return _store_prediction(payload, user_id, units, bill)
+    current_units = float(extracted.get("unitsConsumedKwh") or 0)
+    current_bill = float(extracted.get("amountDue") or 0)
+    previous = history[:-1]
+    anomaly = None
+    if len(previous) >= 2:
+        average = sum(previous) / len(previous)
+        if average > 0:
+            change_percent = round(((current_units - average) / average) * 100, 1)
+            if abs(change_percent) >= 20:
+                anomaly = {"detected": True, "changePercent": change_percent, "baselineUnits": round(average, 2), "message": f"Current consumption is {abs(change_percent)}% {'above' if change_percent > 0 else 'below'} your previous average."}
+    analysis = {
+        "carbonKg": round(current_units * 0.82, 2),
+        "estimatedSavingsAmount": round(max(0, current_bill - bill), 2),
+        "estimatedSavingsKwh": round(max(0, current_units - units), 2),
+        "anomaly": anomaly or {"detected": False},
+    }
+    return _store_prediction(payload, user_id, units, bill, analysis), {**analysis, "currentUnits": current_units, "currentBill": current_bill, "historyUnits": history}
 
 @router.post("/predict-units")
 def predict_units(payload: PredictionInput, user=Depends(current_user)):
@@ -102,8 +118,24 @@ async def upload_bill(file: UploadFile = File(...), user=Depends(current_user)):
             "breakdown": {},
         }).execute().data[0]
         try:
-            prediction = _automatic_prediction(db, user["id"], parsed)
-            automation = {"status": "completed", "prediction": prediction}
+            prediction, analysis_context = _automatic_prediction(db, user["id"], parsed)
+            recommendation_warning = None
+            try:
+                generated = await personalized_recommendations({**analysis_context, "predictedUnits": prediction["predicted_units"], "predictedBill": prediction["predicted_bill"]})
+                for item in generated:
+                    db.table("recommendations").insert({
+                        "user_id": user["id"], "title": str(item["title"]), "category": str(item.get("category") or "Behavioral Shifting"),
+                        "description": str(item["description"]), "estimated_monthly_savings": float(item.get("estimatedMonthlySavings") or 0),
+                        "estimated_kwh_savings": float(item.get("estimatedKwhSavings") or 0), "implementation_cost": str(item.get("implementationCost") or ""),
+                        "payback_months": float(item.get("paybackMonths") or 0), "impact_level": str(item.get("impactLevel") or "Low"),
+                    }).execute()
+            except HTTPException as exc:
+                logger.warning("Recommendation generation failed after bill %s: %s", bill["id"], exc.detail)
+                recommendation_warning = exc.detail
+            except Exception:
+                logger.exception("Unable to persist recommendations for bill %s", bill["id"])
+                recommendation_warning = "Recommendations could not be saved."
+            automation = {"status": "completed", "prediction": prediction, "analysis": analysis_context, "recommendation_warning": recommendation_warning}
         except HTTPException as exc:
             logger.exception("Automated prediction failed after successful OCR for bill %s", bill["id"])
             automation = {"status": "prediction_failed", "message": exc.detail}

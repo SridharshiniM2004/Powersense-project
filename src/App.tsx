@@ -19,6 +19,7 @@ import {
 
 import { authService } from './services/authService';
 import { billService } from './services/billService';
+import { api } from './services/api';
 import { User, BillRecord, PredictionResult, Recommendation } from './types';
 
 import { LandingPage } from './components/LandingPage';
@@ -62,6 +63,7 @@ export function App() {
         setUser(restoredUser);
         const bList = await billService.getBills();
         setBills(bList);
+        setRecommendations(await api.getRecommendations());
       } catch (err) {
         console.warn('Failed to restore session:', err);
       } finally {
@@ -106,6 +108,38 @@ export function App() {
     navigate('/sign-in');
   };
 
+  const handleAnalysisComplete = async (result: any) => {
+    try {
+      const [updatedBills, updatedRecommendations] = await Promise.all([
+        billService.getBills(),
+        api.getRecommendations(),
+      ]);
+      setBills(updatedBills);
+      setRecommendations(updatedRecommendations);
+      const automated = result.automation;
+      if (automated?.status === 'completed' && automated.prediction) {
+        const analysis = automated.analysis || {};
+        const units = Number(automated.prediction.predicted_units);
+        const amount = Number(automated.prediction.predicted_bill);
+        setPrediction({
+          predictedUnitsKwh: units,
+          predictedAmount: amount,
+          confidenceLowerUnits: 0,
+          confidenceUpperUnits: 0,
+          confidenceLowerAmount: 0,
+          confidenceUpperAmount: 0,
+          monthOverMonthChangePercent: 0,
+          peakDemandKw: 0,
+          co2EmissionsKg: Number(analysis.carbonKg || 0),
+          tierBreakdown: [],
+          keyCostDrivers: [],
+        });
+      }
+    } catch (err) {
+      console.warn('Bill analysis completed, but the page data could not be refreshed:', err);
+    }
+  };
+
   if (!authReady) {
     return <div className="min-h-screen bg-slate-950 text-slate-300 grid place-items-center text-sm">Restoring your session...</div>;
   }
@@ -142,7 +176,7 @@ export function App() {
             path="/bill-ocr"
             element={
               <ProtectedRoute user={user}>
-                <BillUploadOCR onBillAdded={(newBill) => setBills((prev) => [newBill, ...prev])} setActiveTab={navigateToTab} />
+                <BillUploadOCR onAnalysisComplete={handleAnalysisComplete} />
               </ProtectedRoute>
             }
           />

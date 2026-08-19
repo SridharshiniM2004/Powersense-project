@@ -10,20 +10,18 @@ import {
   FileText,
   Calendar,
   Layers,
-  Save,
   RefreshCw,
   Image as ImageIcon,
 } from 'lucide-react';
 import { api } from '../services/api';
-import { OCRResult, BillRecord } from '../types';
+import { OCRResult } from '../types';
 import { SAMPLE_BILL_PRESETS } from '../data/sampleData';
 
 interface BillUploadOCRProps {
-  onBillAdded: (bill: BillRecord) => void;
-  setActiveTab: (tab: string) => void;
+  onAnalysisComplete: (result: any) => Promise<void>;
 }
 
-export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onBillAdded, setActiveTab }) => {
+export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onAnalysisComplete }) => {
   const [loading, setLoading] = useState(false);
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
   const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
@@ -46,6 +44,7 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onBillAdded, setAc
       setOcrResult(result.ocr);
       setFormState(result.ocr);
       setAutomation(result.automation);
+      await onAnalysisComplete(result);
       setStatusMessage(result.automation?.status === 'completed' ? 'Bill analysis completed automatically.' : result.automation?.message || 'Bill uploaded, but automatic prediction could not be completed.');
     } catch (err: any) {
       setStatusMessage(`Bill processing error: ${err.message}`);
@@ -66,44 +65,6 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onBillAdded, setAc
       setStatusMessage(null);
     } catch (err: any) {
       setStatusMessage(`OCR Error: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSaveBill = async () => {
-    if (!formState.consumerName || !formState.unitsConsumedKwh) return;
-
-    setLoading(true);
-    try {
-      const saved = await api.createBill({
-        billNumber: formState.billNumber || `INV-${Date.now().toString().slice(-6)}`,
-        consumerName: formState.consumerName,
-        billingMonth: formState.billingMonth || new Date().toISOString().slice(0, 7),
-        issueDate: formState.issueDate || new Date().toISOString().slice(0, 10),
-        dueDate: formState.dueDate || new Date(Date.now() + 18 * 86400000).toISOString().slice(0, 10),
-        previousReading: formState.previousReading || 14000,
-        currentReading: formState.currentReading || 14500,
-        unitsConsumedKwh: Number(formState.unitsConsumedKwh),
-        sanctionedLoadKw: Number(formState.sanctionedLoadKw || 6.5),
-        powerFactor: Number(formState.powerFactor || 0.96),
-        tariffCategory: formState.tariffCategory || 'Residential Tier-2',
-        amountDue: Number(formState.amountDue),
-        breakdown: formState.breakdown || {
-          energyCharges: Number(formState.amountDue) * 0.78,
-          fixedCharges: 14.50,
-          taxesAndSurcharges: Number(formState.amountDue) * 0.12,
-          fuelAdjustmentCharge: Number(formState.amountDue) * 0.05,
-          latePaymentFee: 0,
-        },
-        ocrConfidence: ocrResult?.confidenceScore || 0.98,
-        status: 'paid',
-      });
-
-      onBillAdded(saved);
-      setActiveTab('dashboard');
-    } catch (err: any) {
-      alert(`Save Failed: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -196,7 +157,7 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onBillAdded, setAc
             </div>
 
             {/* Image Preview Window */}
-            {uploadedImagePreview && (
+            {selectedFileName && (
               <div className="space-y-2 pt-2">
                 <div className="flex items-center justify-between text-xs text-slate-400">
                   <span className="flex items-center space-x-1">
@@ -209,13 +170,13 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onBillAdded, setAc
                     </span>
                   )}
                 </div>
-                <div className="w-full h-64 bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center p-2">
+                {uploadedImagePreview && <div className="w-full h-64 bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center p-2">
                   <img
                     src={uploadedImagePreview}
                     alt="Uploaded Bill OCR"
                     className="max-h-full max-w-full object-contain rounded-lg"
                   />
-                </div>
+                </div>}
               </div>
             )}
           </div>
@@ -426,7 +387,7 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onBillAdded, setAc
                   <span className="text-xs text-slate-400">Status: <strong className="text-emerald-400">Bill saved and OCR extraction complete</strong></span>
                   {automation?.status === 'completed' && automation.prediction && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30"><span className="block text-slate-400">Predicted consumption</span><strong className="text-indigo-200 text-base">{automation.prediction.predicted_units} kWh</strong></div>
-                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30"><span className="block text-slate-400">Predicted bill</span><strong className="text-emerald-200 text-base">?{automation.prediction.predicted_bill}</strong></div>
+                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30"><span className="block text-slate-400">Predicted bill</span><strong className="text-emerald-200 text-base">Rs. {automation.prediction.predicted_bill}</strong></div>
                   </div>}
                   {automation?.status === 'prediction_failed' && <p className="text-xs text-amber-300">Model analysis could not finish: {automation.message}</p>}
                 </div>

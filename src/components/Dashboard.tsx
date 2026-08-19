@@ -64,7 +64,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const billChangePercent = (latestBill && prevBill && prevBill.amountDue > 0)
     ? Math.round(((latestBill.amountDue - prevBill.amountDue) / prevBill.amountDue) * 100)
-    : 12;
+    : null;
+  const projectedSavings = latestBill && prediction ? Math.max(0, latestBill.amountDue - prediction.predictedAmount) : null;
+  const carbonKg = latestBill ? latestBill.unitsConsumedKwh * 0.82 : null;
 
   return (
     <div className="space-y-8 pb-12">
@@ -124,11 +126,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </span>
             <span
               className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center space-x-0.5 ${
-                billChangePercent > 0 ? 'bg-rose-500/15 text-rose-400' : 'bg-emerald-500/15 text-emerald-400'
+                (billChangePercent || 0) > 0 ? 'bg-rose-500/15 text-rose-400' : 'bg-emerald-500/15 text-emerald-400'
               }`}
             >
-              {billChangePercent > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-              <span>{Math.abs(billChangePercent)}% vs last month</span>
+              {(billChangePercent || 0) > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              <span>{billChangePercent === null ? 'Need another bill' : `${Math.abs(billChangePercent)}% vs last month`}</span>
             </span>
           </div>
           <p className="text-[11px] text-slate-400">
@@ -165,14 +167,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
           <div className="flex items-baseline justify-between">
             <span className="text-2xl font-black text-indigo-300 font-mono">
-              ${prediction ? prediction.predictedAmount.toFixed(2) : '158.40'}
+              {prediction ? `Rs. ${prediction.predictedAmount.toFixed(2)}` : 'Not available'}
             </span>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300">
-              {prediction ? prediction.predictedUnitsKwh : 580} kWh
+              {prediction ? `${prediction.predictedUnitsKwh} kWh` : 'Upload a bill'}
             </span>
           </div>
           <p className="text-[11px] text-slate-400">
-            Model: <span className="text-slate-300">XGBoost Ensemble (98.4% Accuracy)</span>
+            <span className="text-slate-300">Shown after trained-model analysis completes.</span>
           </p>
         </div>
 
@@ -185,9 +187,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-amber-300 font-mono">$75.00/mo</span>
+            <span className="text-2xl font-black text-amber-300 font-mono">{projectedSavings === null ? 'Not available' : `Rs. ${projectedSavings.toFixed(2)}`}</span>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">
-              -22% kWh
+              {projectedSavings === null ? 'Need forecast' : 'Current vs forecast'}
             </span>
           </div>
           <p className="text-[11px] text-slate-400 flex items-center space-x-1">
