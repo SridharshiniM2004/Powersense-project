@@ -48,6 +48,15 @@ def _number_from_value(value: str) -> float:
     return float(match.group(1).replace(",", "")) if match else 0.0
 
 
+def _measurement_from_value(value: str, maximum: float) -> float:
+    """Reject identifiers (phone/account/meter numbers) as bill measurements."""
+    digits = re.sub(r"\D", "", value)
+    amount = _number_from_value(value)
+    if len(digits) >= 10 or amount <= 0 or amount > maximum:
+        return 0.0
+    return amount
+
+
 def _normalize_date(value: str) -> str:
     value = value.strip()
     for fmt in ("%d-%m-%Y", "%d/%m/%Y", "%Y-%m-%d"):
@@ -85,7 +94,8 @@ def _table_values(lines: list[str]) -> dict[str, str]:
     normalized = [_clean_line(line) for line in lines]
     # Ignore OCR title/disclaimer text. A table normally starts at its Field /
     # Particulars header; everything before it must never be paired to a bill field.
-    table_start = next((index for index, line in enumerate(normalized) if line in {"field", "particulars", "description"}), 0)
+    header_index = next((index for index, line in enumerate(normalized) if line in {"field", "particulars", "description"}), None)
+    table_start = header_index if header_index is not None else 0
     scoped_lines = lines[table_start:]
     scoped_normalized = normalized[table_start:]
     label_at: dict[int, str] = {}
@@ -103,30 +113,32 @@ def _table_values(lines: list[str]) -> dict[str, str]:
             if match and match.group(1).strip() and match.group(1).strip() != alias:
                 values[field] = match.group(1).strip()
                 break
-    # Some PDFs OCR as a contiguous label column followed by a value column.
-    # Pair the two columns by position only when a run has three or more labels.
-    start = 0
-    while start < len(lines):
-        if start not in label_at:
-            start += 1
-            continue
-        end = start
-        while end + 1 in label_at:
-            end += 1
-        labels = [label_at[i] for i in range(start, end + 1)]
-        if len(labels) >= 3:
-            candidates = [scoped_lines[i] for i in range(end + 1, len(scoped_lines)) if i not in label_at]
-            if len(candidates) >= len(labels):
-                for field, value in zip(labels, candidates):
-                    values.setdefault(field, value.strip())
-        start = end + 1
     # PDF table extraction can also produce all labels in one column and all
-    # values in another. Pair the full columns when their counts line up.
+    # values in another. Only do this after an explicit table header; otherwise
+    # a regular paragraph could be paired incorrectly.
     ordered_labels = [label_at[i] for i in sorted(label_at)]
-    ordered_values = [line.strip() for i, line in enumerate(scoped_lines) if i not in label_at and _clean_line(line) not in {"field", "sample value", "value"}]
-    if len(ordered_labels) >= 3 and len(ordered_values) >= len(ordered_labels):
+    ignored_headers = {"field", "sample value", "value"}
+    # In a Field / Sample Value table the first value can wrap before the next
+    # field label. Join those wrapped lines into one value so it cannot shift
+    # consumer, meter, usage, and amount fields down by one position.
+    sample_header = next((i for i, line in enumerate(scoped_normalized) if line in {"sample value", "value"}), None)
+    leading_values: list[str] = []
+    remaining_start = 0
+    if sample_header is not None:
+        cursor = sample_header + 1
+        while cursor < len(scoped_lines) and cursor not in label_at:
+            if _clean_line(scoped_lines[cursor]) not in ignored_headers:
+                leading_values.append(scoped_lines[cursor].strip())
+            cursor += 1
+        remaining_start = cursor
+    ordered_values = ([" ".join(leading_values)] if leading_values else []) + [
+        line.strip()
+        for i, line in enumerate(scoped_lines)
+        if i >= remaining_start and i not in label_at and _clean_line(line) not in ignored_headers
+    ]
+    if header_index is not None and len(ordered_labels) >= 3 and len(ordered_values) >= len(ordered_labels):
         for field, value in zip(ordered_labels, ordered_values):
-            values.setdefault(field, value)
+            values[field] = value
     return values
 
 
@@ -173,14 +185,14 @@ def extract(path: str) -> dict:
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     table = _table_values(lines)
     confidence = 0.85 if lines else 0
-    units = _number_from_value(table.get("unitsConsumedKwh", "")) or _first_number([
+    units = _measurement_from_value(table.get("unitsConsumedKwh", ""), 1_000_000) or _measurement_from_value(str(_first_number([
         r"(?:total\s*)?(?:units?\s*(?:consumed|used)?|consumption|energy\s*consumed|kwh)\s*(?:\([^)]*\))?\s*[:\-]?\s*([\d,.]+)",
         r"([\d,.]+)\s*(?:units?|kwh)\b",
-    ], text)
-    amount = _number_from_value(table.get("amountDue", "")) or _first_number([
+    ], text)), 1_000_000)
+    amount = _measurement_from_value(table.get("amountDue", ""), 10_000_000) or _measurement_from_value(str(_first_number([
         r"(?:net\s*)?(?:total\s*)?(?:amount\s*)?(?:due|payable|to\s*be\s*paid|bill\s*amount|current\s*charges|total\s*charges)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:rs\.?|inr|₹)?\s*([\d,.]+)",
         r"(?:grand\s*total|total\s*amount)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:rs\.?|inr|₹)?\s*([\d,.]+)",
-    ], text)
+    ], text)), 10_000_000)
     fields = {
         "utilityProvider": table.get("utilityProvider", "") or _first_text([r"(?:electricity\s*)?(?:board|distribution|utility|discom)\s*[:\-]?\s*([^\n]+)"], text),
         "consumerName": table.get("consumerName", "") or _first_text([r"(?:consumer|customer)\s*name\s*[:\-]?\s*([^\n]+)", r"name\s*of\s*(?:consumer|customer)\s*[:\-]?\s*([^\n]+)"], text),
