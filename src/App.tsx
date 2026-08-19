@@ -62,7 +62,6 @@ export function App() {
         setUser(restoredUser);
         const bList = await billService.getBills();
         setBills(bList);
-        navigate('/dashboard', { replace: true });
       } catch (err) {
         console.warn('Failed to restore session:', err);
       } finally {
@@ -71,7 +70,7 @@ export function App() {
     };
 
     initApp();
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('powersense-theme', theme);
@@ -221,4 +220,3 @@ export function App() {
 }
 
 export default App;
-
