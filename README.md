@@ -26,6 +26,11 @@ UNITS_MODEL_PATH=models/electricity_units_model.pkl
 BILL_MODEL_PATH=models/electricity_bill_model.pkl
 ```
 
+Before running the application against an existing Supabase project, execute
+[`supabase/active_bill_migration.sql`](supabase/active_bill_migration.sql) once
+in the Supabase SQL Editor. It adds the bill-to-prediction/recommendation links
+and the persisted `active_bill_id` used to keep all bill pages on the same bill.
+
 ## Configure the frontend
 
 Create `.env.local` in the repository root:

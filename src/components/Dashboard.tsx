@@ -78,16 +78,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
             <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
-              Grid Connection Online • {user?.utilityProvider || 'Pacific Grid Electric'}
+              Grid Connection Online • {user?.utilityProvider || 'Provider not detected'}
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-            Hello, {user?.name || 'Alex Rivera'}
+            Hello, {user?.name || 'there'}
           </h1>
           <p className="text-xs text-slate-400 flex items-center space-x-3">
-            <span>Consumer ID: <strong className="text-slate-200 font-mono">{user?.consumerNumber || 'PGP-8849-3021'}</strong></span>
+            <span>Consumer ID: <strong className="text-slate-200 font-mono">{user?.consumerNumber || 'Not detected'}</strong></span>
             <span>•</span>
-            <span>Sanctioned Load: <strong className="text-cyan-400 font-mono">{user?.sanctionedLoadKw || 6.5} kW</strong></span>
+            <span>Sanctioned Load: <strong className="text-cyan-400 font-mono">{user?.sanctionedLoadKw || 'Not detected'}{user?.sanctionedLoadKw ? ' kW' : ''}</strong></span>
           </p>
         </div>
 
@@ -122,7 +122,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
           <div className="flex items-baseline justify-between">
             <span className="text-2xl font-black text-white font-mono">
-              ${latestBill ? (latestBill.amountDue ?? 0).toFixed(2) : '0.00'}
+              {latestBill?.amountDue == null ? 'Not detected' : `₹${latestBill.amountDue.toFixed(2)}`}
             </span>
             <span
               className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center space-x-0.5 ${
@@ -153,7 +153,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </span>
           </div>
           <p className="text-[11px] text-slate-400">
-            Power Factor: <span className="text-emerald-400 font-mono font-bold">{latestBill?.powerFactor ?? 0.95}</span> (Optimal)
+            Power Factor: <span className="text-emerald-400 font-mono font-bold">{latestBill?.powerFactor || 'Not detected'}</span>
           </p>
         </div>
 
@@ -194,7 +194,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
           <p className="text-[11px] text-slate-400 flex items-center space-x-1">
             <Leaf className="w-3.5 h-3.5 text-emerald-400 inline" />
-            <span>Carbon Footprint: 203 kg CO₂</span>
+            <span>Carbon Footprint: {carbonKg == null ? 'Not detected' : `${carbonKg.toFixed(2)} kg CO₂`}</span>
           </p>
         </div>
       </div>

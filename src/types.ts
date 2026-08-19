@@ -48,8 +48,10 @@ export interface BillRecord {
 }
 
 export interface OCRResult {
+  utilityProvider?: string;
   consumerName: string;
   consumerNumber: string;
+  meterNumber?: string;
   billNumber: string;
   billingMonth: string;
   issueDate: string;
@@ -60,11 +62,13 @@ export interface OCRResult {
   sanctionedLoadKw: number;
   powerFactor: number;
   tariffCategory: string;
+  connectionType?: string;
   amountDue: number;
   breakdown: BillBreakdown;
   confidenceScore: number;
   detectedFieldsCount: number;
   rawTextSnippets: string[];
+  qualityWarnings?: string[];
 }
 
 export interface MLPredictionInput {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FileScan,
   Upload,
@@ -18,10 +18,11 @@ import { OCRResult } from '../types';
 import { SAMPLE_BILL_PRESETS } from '../data/sampleData';
 
 interface BillUploadOCRProps {
+  activeAnalysis: any | null;
   onAnalysisComplete: (result: any) => Promise<void>;
 }
 
-export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onAnalysisComplete }) => {
+export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ activeAnalysis, onAnalysisComplete }) => {
   const [loading, setLoading] = useState(false);
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
   const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
@@ -32,6 +33,24 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onAnalysisComplete
 
   // Editable Form State
   const [formState, setFormState] = useState<Partial<OCRResult>>({});
+
+  // Bill History selection and a page refresh both restore the exact OCR record
+  // associated with the shared active bill, rather than a blank local form.
+  useEffect(() => {
+    const parsed = activeAnalysis?.ocr?.result;
+    if (!parsed) return;
+    setOcrResult(parsed as OCRResult);
+    setFormState(parsed as Partial<OCRResult>);
+    setSelectedFileName(activeAnalysis?.bill?.bill_number || activeAnalysis?.bill?.file_url?.split('/').pop() || 'Active bill document');
+    setAutomation(activeAnalysis?.prediction ? {
+      status: 'completed',
+      prediction: {
+        predicted_units: Number(activeAnalysis.prediction.predicted_units),
+        predicted_bill: Number(activeAnalysis.prediction.predicted_bill),
+      },
+    } : null);
+    setStatusMessage(null);
+  }, [activeAnalysis]);
 
   const handleFileUpload = async (file: File) => {
     setLoading(true);
@@ -255,6 +274,21 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onAnalysisComplete
                     </div>
 
                     <div>
+                      <label className="block text-slate-400 mb-1">Consumer / Account Number</label>
+                      <input type="text" value={formState.consumerNumber || ''} onChange={(e) => setFormState({ ...formState, consumerNumber: e.target.value })} className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono focus:border-cyan-500" />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 mb-1">Utility Provider</label>
+                      <input type="text" value={formState.utilityProvider || ''} onChange={(e) => setFormState({ ...formState, utilityProvider: e.target.value })} className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-medium focus:border-cyan-500" />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 mb-1">Meter Number</label>
+                      <input type="text" value={formState.meterNumber || ''} onChange={(e) => setFormState({ ...formState, meterNumber: e.target.value })} className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono focus:border-cyan-500" />
+                    </div>
+
+                    <div>
                       <label className="block text-slate-400 mb-1">Invoice Number</label>
                       <input
                         type="text"
@@ -285,17 +319,27 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onAnalysisComplete
                     </div>
 
                     <div>
+                      <label className="block text-slate-400 mb-1">Issue Date</label>
+                      <input type="date" value={formState.issueDate || ''} onChange={(e) => setFormState({ ...formState, issueDate: e.target.value })} className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono focus:border-cyan-500" />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 mb-1">Tariff Category</label>
+                      <input type="text" value={formState.tariffCategory || ''} onChange={(e) => setFormState({ ...formState, tariffCategory: e.target.value })} className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-medium focus:border-cyan-500" />
+                    </div>
+
+                    <div>
                       <label className="block text-slate-400 mb-1">Previous Reading</label>
                       <input
                         type="number"
-                        value={formState.previousReading || 0}
+                        value={formState.previousReading ?? ''}
                         onChange={(e) => {
                           const prev = Number(e.target.value);
-                          const curr = formState.currentReading || prev + 500;
+                          const curr = formState.currentReading;
                           setFormState({
                             ...formState,
                             previousReading: prev,
-                            unitsConsumedKwh: Math.max(0, curr - prev),
+                            unitsConsumedKwh: curr == null ? formState.unitsConsumedKwh : Math.max(0, curr - prev),
                           });
                         }}
                         className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-cyan-400 font-mono font-bold focus:border-cyan-500"
@@ -306,14 +350,14 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onAnalysisComplete
                       <label className="block text-slate-400 mb-1">Current Reading</label>
                       <input
                         type="number"
-                        value={formState.currentReading || 0}
+                        value={formState.currentReading ?? ''}
                         onChange={(e) => {
                           const curr = Number(e.target.value);
-                          const prev = formState.previousReading || 0;
+                          const prev = formState.previousReading;
                           setFormState({
                             ...formState,
                             currentReading: curr,
-                            unitsConsumedKwh: Math.max(0, curr - prev),
+                            unitsConsumedKwh: prev == null ? formState.unitsConsumedKwh : Math.max(0, curr - prev),
                           });
                         }}
                         className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-cyan-400 font-mono font-bold focus:border-cyan-500"
@@ -324,7 +368,7 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onAnalysisComplete
                       <label className="block text-slate-400 mb-1">Units Consumed (kWh)</label>
                       <input
                         type="number"
-                        value={formState.unitsConsumedKwh || 0}
+                        value={formState.unitsConsumedKwh ?? ''}
                         onChange={(e) => setFormState({ ...formState, unitsConsumedKwh: Number(e.target.value) })}
                         className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-cyan-400 font-mono font-bold focus:border-cyan-500"
                       />
@@ -335,7 +379,7 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onAnalysisComplete
                       <input
                         type="number"
                         step="0.01"
-                        value={formState.amountDue || 0}
+                        value={formState.amountDue ?? ''}
                         onChange={(e) => setFormState({ ...formState, amountDue: Number(e.target.value) })}
                         className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-emerald-400 font-mono font-bold focus:border-cyan-500"
                       />
@@ -375,6 +419,7 @@ export const BillUploadOCR: React.FC<BillUploadOCRProps> = ({ onAnalysisComplete
                 {activeTab === 'rawText' && (
                   <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2 font-mono text-[11px] text-slate-300">
                     <p className="text-slate-400 font-semibold mb-2">OCR Detected Text Fragments:</p>
+                    {ocrResult.qualityWarnings?.map((warning, idx) => <p key={`warning-${idx}`} className="p-2 rounded border border-amber-500/30 bg-amber-500/10 text-amber-200 font-sans">{warning}</p>)}
                     {ocrResult.rawTextSnippets.map((snippet, idx) => (
                       <div key={idx} className="p-2 bg-slate-900 rounded border border-slate-800/80">
                         {snippet}

@@ -50,6 +50,7 @@ export function App() {
   const [bills, setBills] = useState<BillRecord[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [prediction, setPrediction] = useState<PredictionResult | null>(null);
+  const [activeAnalysis, setActiveAnalysis] = useState<any | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const [authReady, setAuthReady] = useState(false);
@@ -69,6 +70,9 @@ export function App() {
           ]);
           setBills(bList);
           setRecommendations(savedRecommendations);
+          const rememberedId = localStorage.getItem('powersense-active-bill-id');
+          const initialBill = bList.find((bill) => bill.id === rememberedId) || bList[0];
+          if (initialBill) await activateBill(initialBill.id, bList);
         } catch (err) {
           console.warn('Signed in, but initial PowerSense data could not be loaded:', err);
         }
@@ -118,7 +122,9 @@ export function App() {
 
   const activateBill = async (billId: string, knownBills: BillRecord[] = bills) => {
     localStorage.setItem('powersense-active-bill-id', billId);
+    await api.setActiveBill(billId);
     const analysis = await api.getBillAnalysis(billId);
+    setActiveAnalysis(analysis);
     setBills([...(knownBills || [])].sort((a, b) => (a.id === billId ? -1 : b.id === billId ? 1 : 0)));
     const stored = analysis.prediction;
     if (stored) {
@@ -205,7 +211,7 @@ export function App() {
             path="/bill-ocr"
             element={
               <ProtectedRoute user={user}>
-                <BillUploadOCR onAnalysisComplete={handleAnalysisComplete} />
+                <BillUploadOCR activeAnalysis={activeAnalysis} onAnalysisComplete={handleAnalysisComplete} />
               </ProtectedRoute>
             }
           />
@@ -237,7 +243,7 @@ export function App() {
             path="/tips-savings"
             element={
               <ProtectedRoute user={user}>
-                <Recommendations recommendations={recommendations} onRecommendationUpdate={(updated) => setRecommendations((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))} />
+                <Recommendations recommendations={recommendations} analysisState={activeAnalysis?.analysis_state} onOpenProfile={() => navigateToTab('profile')} onRecommendationUpdate={(updated) => setRecommendations((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))} />
               </ProtectedRoute>
             }
           />

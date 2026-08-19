@@ -27,6 +27,14 @@ def _first_number(patterns: list[str], text: str) -> float:
     return 0.0
 
 
+def _first_text(patterns: list[str], text: str) -> str:
+    for pattern in patterns:
+        value = _find(pattern, text)
+        if value:
+            return value
+    return ""
+
+
 def _error_message(payload: dict) -> str:
     message = payload.get("ErrorMessage") or payload.get("ErrorDetails") or "Online OCR failed"
     if isinstance(message, list):
@@ -78,19 +86,20 @@ def extract(path: str) -> dict:
         r"(?:grand\s*total|total\s*amount)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:rs\.?|inr|₹)?\s*([\d,.]+)",
     ], text)
     fields = {
-        "consumerName": _find(r"(?:consumer|customer)\s*name\s*[:\-]?\s*([^\n]+)", text),
-        "consumerNumber": _find(r"(?:consumer|account)\s*(?:no|number|id)\s*[:\-]?\s*([^\n]+)", text),
-        "meterNumber": _find(r"meter\s*(?:no|number)\s*[:\-]?\s*([^\n]+)", text),
-        "billNumber": _find(r"(?:bill|invoice)\s*(?:no|number)\s*[:\-]?\s*([^\n]+)", text),
-        "billingMonth": _find(r"(?:billing\s*(?:month|period)|bill\s*period|period\s*of\s*supply)\s*[:\-]?\s*([^\n]+)", text),
-        "issueDate": _find(r"(?:bill|issue|reading)\s*date\s*[:\-]?\s*([^\n]+)", text),
-        "dueDate": _find(r"(?:due\s*date|last\s*date\s*for\s*payment)\s*[:\-]?\s*([^\n]+)", text),
+        "utilityProvider": _first_text([r"(?:electricity\s*)?(?:board|distribution|utility|discom)\s*[:\-]?\s*([^\n]+)"], text),
+        "consumerName": _first_text([r"(?:consumer|customer)\s*name\s*[:\-]?\s*([^\n]+)", r"name\s*of\s*(?:consumer|customer)\s*[:\-]?\s*([^\n]+)"], text),
+        "consumerNumber": _first_text([r"(?:consumer|account|service|customer)\s*(?:no\.?|number|id)\s*[:\-]?\s*([^\n]+)"], text),
+        "meterNumber": _first_text([r"meter\s*(?:no\.?|number|id)\s*[:\-]?\s*([^\n]+)"], text),
+        "billNumber": _first_text([r"(?:bill|invoice)\s*(?:no\.?|number)\s*[:\-]?\s*([^\n]+)"], text),
+        "billingMonth": _first_text([r"(?:billing\s*(?:month|period)|bill\s*period|period\s*of\s*supply|consumption\s*period)\s*[:\-]?\s*([^\n]+)"], text),
+        "issueDate": _first_text([r"(?:bill|issue|reading)\s*date\s*[:\-]?\s*([^\n]+)"], text),
+        "dueDate": _first_text([r"(?:due\s*date|last\s*date\s*for\s*payment|pay\s*by)\s*[:\-]?\s*([^\n]+)"], text),
         "previousReading": _first_number([r"(?:previous|old)\s*(?:meter\s*)?(?:reading)\s*[:\-]?\s*([\d,.]+)"], text),
         "currentReading": _first_number([r"(?:current|present|new)\s*(?:meter\s*)?(?:reading)\s*[:\-]?\s*([\d,.]+)"], text),
         "unitsConsumedKwh": units,
         "amountDue": amount,
-        "tariffCategory": _find(r"tariff\s*[:\-]?\s*([^\n]+)", text),
-        "connectionType": _find(r"connection\s*type\s*[:\-]?\s*([^\n]+)", text),
+        "tariffCategory": _first_text([r"(?:tariff|category)\s*[:\-]?\s*([^\n]+)"], text),
+        "connectionType": _first_text([r"connection\s*type\s*[:\-]?\s*([^\n]+)"], text),
     }
     fields.update(
         {
@@ -110,4 +119,13 @@ def extract(path: str) -> dict:
             "rawTextSnippets": lines,
         }
     )
+    evidence = sum(bool(re.search(pattern, text, re.I)) for pattern in (
+        r"\b(?:electricity|energy|kwh|units?|meter|tariff|discom|utility)\b",
+        r"\b(?:bill|invoice|amount\s+(?:due|payable)|total\s+charges)\b",
+        r"\b(?:consumer|account|service)\s*(?:no|number|id)\b",
+    ))
+    fields["isElectricityBill"] = evidence >= 2 and bool(lines)
+    fields["identificationEvidence"] = evidence
+    if not fields["isElectricityBill"]:
+        fields["qualityWarnings"].append("This document does not contain enough electricity-bill evidence to process safely.")
     return fields

@@ -18,11 +18,15 @@ import { Recommendation } from '../types';
 
 interface RecommendationsProps {
   recommendations: Recommendation[];
+  analysisState?: string | null;
+  onOpenProfile: () => void;
   onRecommendationUpdate: (updated: Recommendation) => void;
 }
 
 export const Recommendations: React.FC<RecommendationsProps> = ({
   recommendations,
+  analysisState,
+  onOpenProfile,
   onRecommendationUpdate,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -100,6 +104,7 @@ export const Recommendations: React.FC<RecommendationsProps> = ({
 
       {/* Recommendation Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {filtered.length === 0 && <div className="md:col-span-2 rounded-2xl border border-amber-500/30 bg-slate-900 p-8 text-center text-xs text-slate-300 space-y-3"><p>{analysisState || 'No recommendations were saved for the active bill.'}</p>{analysisState?.startsWith('No trained-model') && <button onClick={onOpenProfile} className="px-3 py-2 rounded-lg bg-cyan-500 text-slate-950 font-bold">Complete Profile</button>}</div>}
         {filtered.map((rec) => (
           <div
             key={rec.id}

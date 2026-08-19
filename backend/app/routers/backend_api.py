@@ -51,15 +51,25 @@ def _automatic_prediction(db, user_id: str, extracted: dict, bill_id: str) -> tu
     profile = db.table("profiles").select("sanctioned_load_kw,home_area_sqft,occupants").eq("id", user_id).maybe_single().execute().data or {}
     history_rows = db.table("electricity_bills").select("units_consumed_kwh").eq("user_id", user_id).order("created_at", desc=True).limit(24).execute().data
     history = [float(row["units_consumed_kwh"] or 0) for row in reversed(history_rows) if row.get("units_consumed_kwh") is not None]
+    current_units = extracted.get("unitsConsumedKwh")
+    current_bill = extracted.get("amountDue")
+    missing = []
+    if not current_units:
+        missing.append("units consumed")
+    for key, label in (("home_area_sqft", "home area"), ("occupants", "occupants"), ("sanctioned_load_kw", "sanctioned load")):
+        if not profile.get(key):
+            missing.append(label)
+    if missing:
+        raise HTTPException(422, f"Trained-model prediction requires {'; '.join(missing)}. No prediction was generated.")
     if not history:
-        history = [float(extracted.get("unitsConsumedKwh") or 0)]
+        history = [float(current_units)]
     tariff_text = (extracted.get("tariffCategory") or extracted.get("connectionType") or "").lower()
     tariff = "Industrial" if "industrial" in tariff_text else "Commercial" if "commercial" in tariff_text else "Residential"
     now = datetime.now(timezone.utc)
-    payload = {"sourceBillId": bill_id, "historyUnits": history, "billingMonth": (now.month % 12) + 1, "homeAreaSqFt": float(profile.get("home_area_sqft") or 0), "occupants": int(profile.get("occupants") or 0), "acCount": 0, "acAverageHoursDaily": 0, "hasEvCharger": False, "hasSolarPanels": False, "solarCapacityKw": 0, "hasWaterHeater": False, "heavyHvacUsage": False, "sanctionedLoadKw": float(profile.get("sanctioned_load_kw") or 0), "tariffCategory": tariff, "avgTemperatureC": 0}
+    payload = {"sourceBillId": bill_id, "historyUnits": history, "billingMonth": (now.month % 12) + 1, "homeAreaSqFt": float(profile["home_area_sqft"]), "occupants": int(profile["occupants"]), "acCount": 0, "acAverageHoursDaily": 0, "hasEvCharger": False, "hasSolarPanels": False, "solarCapacityKw": 0, "hasWaterHeater": False, "heavyHvacUsage": False, "sanctionedLoadKw": float(profile["sanctioned_load_kw"]), "tariffCategory": tariff, "avgTemperatureC": 0}
     units, bill = predict(payload)
-    current_units = float(extracted.get("unitsConsumedKwh") or 0)
-    current_bill = float(extracted.get("amountDue") or 0)
+    current_units = float(current_units)
+    current_bill = float(current_bill or 0)
     previous = history[:-1]
     anomaly = None
     if len(previous) >= 2:
@@ -99,6 +109,8 @@ async def upload_bill(file: UploadFile = File(...), user=Depends(current_user)):
     try:
         local_path.write_bytes(content)
         parsed = extract(str(local_path))
+        if not parsed.get("isElectricityBill"):
+            raise HTTPException(422, "The uploaded document could not be identified as an electricity bill.")
         db = service_client()
         db.storage.from_(settings.supabase_bills_bucket).upload(storage_path, content, {"content-type": file.content_type, "upsert": "false"})
         ocr = db.table("ocr_results").insert({"user_id": user["id"], "file_path": storage_path, "result": parsed, "confidence": parsed["confidenceScore"]}).execute().data[0]
@@ -109,14 +121,15 @@ async def upload_bill(file: UploadFile = File(...), user=Depends(current_user)):
             "consumer_number": parsed.get("consumerNumber") or None,
             "meter_number": parsed.get("meterNumber") or None,
             "billing_month": parsed.get("billingMonth") or None,
-            "units_consumed_kwh": parsed.get("unitsConsumedKwh", 0),
-            "amount_due": parsed.get("amountDue", 0),
+            "units_consumed_kwh": parsed.get("unitsConsumedKwh") or None,
+            "amount_due": parsed.get("amountDue") or None,
             "tariff_category": parsed.get("tariffCategory") or None,
             "connection_type": parsed.get("connectionType") or None,
             "file_url": storage_path,
             "ocr_confidence": parsed["confidenceScore"],
             "breakdown": {},
         }).execute().data[0]
+        db.table("profiles").update({"active_bill_id": bill["id"]}).eq("id", user["id"]).execute()
         try:
             prediction, analysis_context = _automatic_prediction(db, user["id"], parsed, bill["id"])
             recommendation_warning = None
@@ -183,12 +196,26 @@ def bill_analysis(bill_id: str, user=Depends(current_user)):
         ocr = db.table("ocr_results").select("*").eq("user_id", user["id"]).eq("file_path", bill.get("file_url") or "").order("created_at", desc=True).limit(1).execute().data
         prediction = db.table("predictions").select("*").eq("user_id", user["id"]).eq("bill_id", bill_id).order("created_at", desc=True).limit(1).execute().data
         recommendations = db.table("recommendations").select("*").eq("user_id", user["id"]).eq("bill_id", bill_id).order("created_at", desc=True).execute().data
-        return {"bill": bill, "ocr": ocr[0] if ocr else None, "prediction": prediction[0] if prediction else None, "recommendations": recommendations}
+        analysis_state = None
+        if not prediction:
+            analysis_state = "No trained-model prediction is stored for this bill. Add home area, occupants, and sanctioned load in Profile, then upload or reprocess the bill."
+        elif not recommendations:
+            analysis_state = "Prediction is available, but no recommendations were saved. Check the existing OpenRouter configuration and retry processing this bill."
+        return {"bill": bill, "ocr": ocr[0] if ocr else None, "prediction": prediction[0] if prediction else None, "recommendations": recommendations, "analysis_state": analysis_state}
     except HTTPException:
         raise
     except Exception as exc:
         logger.exception("Unable to load analysis for bill %s", bill_id)
         raise HTTPException(502, "Unable to load this bill's analysis") from exc
+
+@router.put("/bills/{bill_id}/active")
+def set_active_bill(bill_id: str, user=Depends(current_user)):
+    db = service_client()
+    bill = db.table("electricity_bills").select("id").eq("id", bill_id).eq("user_id", user["id"]).maybe_single().execute().data
+    if not bill:
+        raise HTTPException(404, "Bill not found")
+    db.table("profiles").update({"active_bill_id": bill_id}).eq("id", user["id"]).execute()
+    return {"active_bill_id": bill_id}
 
 @router.get("/profile")
 def get_profile(user=Depends(current_user)):
