@@ -1,21 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
-import {
-  Zap,
-  LayoutDashboard,
-  FileScan,
-  TrendingUp,
-  BarChart3,
-  Bot,
-  Lightbulb,
-  History,
-  User as UserIcon,
-  ShieldCheck,
-  Settings as SettingsIcon,
-  LogOut,
-  Sun,
-  Moon,
-} from 'lucide-react';
 
 import { authService } from './services/authService';
 import { billService } from './services/billService';
@@ -25,7 +9,6 @@ import { User, BillRecord, PredictionResult, Recommendation } from './types';
 import { LandingPage } from './components/LandingPage';
 import { Footer } from './components/Footer';
 import { ResetPasswordPage } from './components/RecoveryPages';
-import { Dashboard } from './components/Dashboard';
 import { BillUploadOCR } from './components/BillUploadOCR';
 import { PredictionEngine } from './components/PredictionEngine';
 import { InteractiveAnalytics } from './components/InteractiveAnalytics';
@@ -45,7 +28,7 @@ import { Navbar } from './components/Navbar';
 export function App() {
   const [user, setUser] = useState<User | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(() =>
-    localStorage.getItem('powersense-theme') === 'light' ? 'light' : 'dark'
+    localStorage.getItem('powersense-theme') === 'dark' ? 'dark' : 'light'
   );
   const [bills, setBills] = useState<BillRecord[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
@@ -92,6 +75,16 @@ export function App() {
   }, [theme]);
 
   const navigateToTab = (tab: string) => {
+    const sectionIds = ['home', 'dashboard', 'energy-usage', 'insights', 'about'];
+    if (sectionIds.includes(tab)) {
+      if (location.pathname !== '/') {
+        navigate(`/#${tab}`);
+        window.setTimeout(() => document.getElementById(tab)?.scrollIntoView({ behavior: 'smooth' }), 50);
+      } else {
+        document.getElementById(tab)?.scrollIntoView({ behavior: 'smooth' });
+      }
+      return;
+    }
     const routeMap: Record<string, string> = {
       landing: '/',
       dashboard: '/dashboard',
@@ -180,10 +173,10 @@ export function App() {
   }
 
   return (
-    <div className={`min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950 ${theme === 'light' ? 'theme-light' : ''}`}>
+    <div className={`min-h-screen bg-white text-slate-900 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950 ${theme === 'light' ? 'theme-light' : ''}`}>
       <Navbar activeTab={activeTab} setActiveTab={navigateToTab} user={user} onOpenAuth={() => navigate('/sign-in')} onLogout={handleLogout} />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1">
         <Routes>
           <Route
             path="/"
@@ -191,6 +184,10 @@ export function App() {
               <LandingPage
                 setActiveTab={navigateToTab}
                 onOpenAuth={() => navigate('/sign-in')}
+                user={user}
+                bills={bills}
+                prediction={prediction}
+                recommendations={recommendations}
                 isAdmin={user?.role === 'admin'}
               />
             }
@@ -199,14 +196,7 @@ export function App() {
           <Route path="/sign-up" element={<SignUpPage user={user} onSuccess={handleLoginSuccess} />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute user={user}>
-                <Dashboard user={user} bills={bills} prediction={prediction} recommendations={recommendations} setActiveTab={navigateToTab} />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/dashboard" element={<LandingPage setActiveTab={navigateToTab} onOpenAuth={() => navigate('/sign-in')} user={user} bills={bills} prediction={prediction} recommendations={recommendations} />} />
           <Route
             path="/bill-ocr"
             element={
